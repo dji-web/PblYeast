@@ -1,0 +1,37 @@
+---
+title: "task3"
+output: html_document
+---
+
+```{r}
+library(here)
+sample <- read.csv2(here("data", "sample.tsv"), sep="\t", header=TRUE)
+
+```
+## Data Overview 1
+```{r}
+head(sample)
+dim(sample)
+sum(sample$count==0)
+```
+
+## Data Overview 2
+```{r}
+min(sample$count)
+max(sample$count)
+mean(sample$count)
+sd(sample$count)
+```
+# Plotting
+```{r}
+plot(sample$count)
+barplot(sample$count)
+stripchart(sample$count)
+boxplot(sample$count)
+hist(sample$count)
+plot(density(sample$count))
+```
+
+
+
+
