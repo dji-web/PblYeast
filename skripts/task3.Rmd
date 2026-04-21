@@ -1,21 +1,24 @@
 ---
-title: "task3"
-output: html_document
+title: "Task3 - Exploratory Data Analysis"
+output: 
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
 ---
 
-```{r}
+```{r setup, include=TRUE, warning=FALSE, message=FALSE}
 library(here)
 sample <- read.csv2(here("data", "sample.tsv"), sep="\t", header=TRUE)
 
+
 ```
-## Data Overview 1
+## Data Overview 
 ```{r}
 head(sample)
 dim(sample)
 sum(sample$count==0)
 ```
-
-## Data Overview 2
 ```{r}
 min(sample$count)
 max(sample$count)
@@ -31,27 +34,33 @@ boxplot(sample$count)
 hist(sample$count)
 plot(density(sample$count))
 ```
-row 12: read.csv2 imports the data of the chosen file (sample.tsv); the parameters specify that the file uses tabs (sep="\t") as separators and contains column names in the first row (header = TRUE)
-row 16: head() shows the first six rows of the dataset to provide a quick look into the data structure
-row 17: dim() shows the dimensions of the daraset (number of rows and columns)
-row 18: sum(sample$count==0) calculates the total number of genes without expression 
-row 21 & 22: min()/ max() identify the lowest/ highest expression values int the column "count"
-row 23: mean() calculates the average expression level
-row 24: sd() calculates the standard deviation (shows dispersion around the average)
-row 27-32: create 6 different plot as visual representation of the values
 
-sneak peak: shows the first 6 genes and its amount of expression. For example, in these 6 genes, the highest expression is in gene ICR1 with 194 counts.
-general statistics: Result of dim() with 7,126 rows (= genes) und 2 columns (gene_id and counts)
-          1,090 genes have an expression value of zero 
-          the counts range from a min of 0 to a max. 194,695 (no transciption under these circumstances)
-          the mean is approximately 749, the sd 3837 (high sd indicates a high level of dispersion)
-Indexplot: each point represents 1 gene. The x-axis could be the row number in the table, the y-axis the expression count
-Most genes have low expression (under 30,000 counts) while few outliers are expressed highly (>100,000 counts)
-Barplot: shows a expression as a bar for each gene in the dataset. its shows the same like the Indexplot, just a different type of graphics/ vizualisation.
-Stripchart: is a one-dimensional scatter plot, that stacks the expression values on an horizontal axis. shows high density and gaps in the expression of genes of this dataset.
-Boxplot: the box (not visible) represents the middle 50% of the data. looks like a line in the bottom part, because the mean and most values have similar expression rates
-Histogram: gathers frequencies of different expression rates in columns. Each column represents 10,000 counts in expression rate. the first column contains almost all values
-Density plot: is a smoothed version of the Histogram showing the probalility distribution. The steep peak in the beginning shows the high concentration of low expression values in most genes
+### Methodology and Code Implementation
+* Row 8: `read.csv2`imports the data of the chosen file (sample.tsv); the parameters specify that the file uses tabs (sep="\t") as separators and contains column names in the first row (header = TRUE)   
+* Row 13: `head()`shows the first six rows of the dataset to provide a quick look into the data structure   
+* Row 14: `dim()` shows the dimensions of the dataset (number of rows and columns)   
+* Row 15: `sum(sample$count==0)`calculates the total number of genes without expression    
+* Row 20 & 21: `min()`/ `max()` identify the lowest/ highest expression values in the column "count"   
+* Row 22: `mean()` calculates the average expression level   
+* Row 23: `sd()` calculates the standard deviation (shows dispersion around the average)   
+* Row 27-32: create 6 different plot as visual representation of the values
+
+### Statistical Analysis
+* Data Preview: shows the first 6 genes and its amount of expression. For example, in these 6 genes, the highest expression is in gene ICR1 with 194 counts.   
+* General statistics: Result of `dim()` with **7,126** rows (= genes) and 2 columns (gene_id and counts)
+          **1,090** genes have an expression value of zero 
+          the counts range from a min of **0** counts to a max. **194,695** counts (no transciption under these circumstances)
+          the mean is approximately **749** counts, the sd **3,837** counts(high sd indicates a high level of dispersion)   
+          
+### Visual Interpretation          
+* Indexplot: each point represents one gene. The x-axis could be the row number in the table, the y-axis the expression count
+Most genes have low expression (**under 30,000** counts) while few outliers are expressed highly (**>100,000** counts)  
+* Barplot: shows a expression as a bar for each gene in the dataset. its shows the same like the Indexplot, just a different type of graphics/ visualization.  
+* Stripchart: is a one-dimensional scatter plot, that stacks the expression values on an horizontal axis. shows high density and gaps in the expression of genes of this dataset.   
+* Boxplot: the box (not visible) represents the middle 50% of the data. looks like a line in the bottom part, because the mean and most values have similar expression rates   
+* Histogram: gathers frequencies of different expression rates in columns. Each column represents 10,000 counts in expression rate. the first column contains almost all values   
+* Density plot: is a smoothed version of the Histogram showing the probability distribution. The steep peak in the beginning shows the high concentration of low expression values in most genes
+
 
 
 
