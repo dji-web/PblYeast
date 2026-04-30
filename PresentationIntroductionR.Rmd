@@ -1,0 +1,211 @@
+---
+title: "PresentationIntroductionR"
+output: html_document
+---
+
+### Aufgabe1 Einführung in R mit W3 school
+
+
+
+## Basic Synatax of R
+For print statements in R, use single or double quotes.
+For simple calculations just write out the equation.
+
+```{r}
+"Hello World"
+5 + 5
+```
+For comments just write a # in front of the statement, there is no possebility for multiline comments with just one declaration.
+
+For assigning variables you use variable <- value, there is no need to declare the data type. For printing out variables its enough to just write their names, although ther is also the possibility to use the print() function.
+```{r}
+name <- "Nick"
+age <- 21
+name
+age
+```
+Data Types in R are quite similar to other programming languages, the declaration is a bit different and its more math based. The datatype can be shown with class().Important: Integers are marked with an L after the Value, and complex numbers are written with a imaginary and real part.
+Basic Data Types are:
+```{r}
+#numeric
+x <- 15.0
+class(x)
+
+#integer
+x <- 100L
+class(x)
+#complex
+x <- 9i + 3
+class(x)
+
+#boolean
+x <- TRUE
+class(x)
+```
+
+## Basic Math Functions
+The min(), max() function, shows the highest / lowest number of its input, the sqrt() function returns the square root of a number, The abs() function returns the positive value of a number:
+```{r}
+max(5, 6, 7)
+sqrt(4)
+abs(-5)
+```
+
+Booleans, when comparing two values the expression is evaluated to an boolean:
+```{r}
+10 > 9
+10 == 9 #equals
+10 < 9
+# its also possible to write if statements:
+a <- 10
+b <-9
+if (b > a){
+  "b is greater than a"
+}else{"b is not greater than a"}
+```
+
+## Loops
+The Loops in R are quite similar to Java, we use the same curly brackets and similar syntax:
+While Loop:
+```{r}
+i <- 0
+while (i < 6) {
+  i <- i + 1
+  if (i == 3) {
+    next
+  }
+  print(i)
+}
+```
+
+For Loop:
+```{r}
+for (x in 1:10) {
+  print(x)
+}
+```
+With the break statement, we can stop the loop before it has looped through all the items, with the next statement, we can skip an iteration without terminating the loop.
+## Functions
+Creating a Function in R, you assign to a variable the function keyword, you call it with the name and normal brackets:
+function_name <- function(Arguments){
+what happens
+}
+function_name() calls the function
+```{r}
+first_function <- function(){
+  "Hello World"
+}
+first_function()
+```
+R uses lexical scoping, the last evaluated expression is returned implicitly, and default parameters are defined in the signature.
+
+## The Apply Family
+The apply family in R is a set og functions that replaces explicit loops by applying a function to each element of a data structure, making code shorter and more readable. Each member of the family targets a different input shape and returns a different output type, so choosing the right one depends on what you're iterating over and what form you need the result in.
+
+Apply
+Input: matrix/array Output: vector/list
+```{r}
+m <- matrix(1:12, nrow = 3)
+apply(m, 1, sum)
+```
+
+Lapply
+Input: list/vectors Output: list
+```{r}
+# lapply — get the mean of each list element, returns a list
+lapply(list(a = 1:3, b = 4:6), mean)
+```
+
+Sapply
+Input: list/vector Output: vector/matrix
+```{r}
+# sapply — same as lapply but returns a simple vector
+sapply(list(a = 1:3, b = 4:6), mean)
+```
+
+
+Tapply
+Input: vector + groups Output: array
+```{r}
+# tapply — mean score grouped by category
+scores <- c(85, 90, 78, 92, 88)
+groups <- c("A", "B", "A", "B", "A")
+tapply(scores, groups, mean)
+```
+
+
+Mapply
+Input: multiple vectors Output: vector/list
+```{r}
+# mapply — raise each x to the power of the matching y
+mapply(function(x, y) x^y, x = 1:4, y = 4:1)
+```
+## Casting
+In R, the numeric type is the default for numbers and refers to double-precision floating point, integer is separate and more memory efficient. Its created using the L suffix.
+```{r}
+# numeric in R is the general floating-point type (double by default)
+x <- 3.14
+class(x)      # "numeric"
+typeof(x)     # "double"
+
+y <- 3L       # the L suffix makes it an integer
+typeof(y)     # "integer"
+class(y)      # "integer"
+
+
+```
+Casting means explicitly converting a value from one type to another
+```{r}
+
+
+as.integer(3.9)   #  3  (truncates, does NOT round)
+as.double(3L)     #  3.0
+as.character(42)  #  "42"
+as.numeric("3.5") #  3.5
+as.numeric("abc") #  NA with a warning
+
+# Implicit coercion in vectors (everything becomes the "widest" type)
+c(1L, 2.5)        #  numeric (double)
+c(1, "a")         #  character — everything becomes string!
+c(TRUE, 1L, 2.5)  #  numeric: TRUE→1, FALSE→0
+```
+## Factors in R
+Factors in R are used to represent categorical data, storing values as integers internally while displaying them as meaningful labels. Unlike plain strings, factors have a fixed set of allowed values called levels, which makes them ideal for variables like survey answers or groups.
+
+```{r}
+sizes <- factor(c("small", "large", "medium", "small", "large"))
+levels(sizes)    #  "large" "medium" "small"
+table(sizes)     # counts per category
+```
+## Plotting in R 
+R comes with a built in plot() function that covers the most common chart types without needing any extra library. The most frequently used types are scatter plots, line plots, bar charts, histograms, and box plots, all controllable through simple parameters like main, col, and xlab.
+Scatter plot:
+```{r}
+plot(c(1,2,3,4,5), c(2,4,1,6,3), main = "Scatter", xlab = "x", ylab = "y")
+```
+Bar chart:
+
+```{r}
+barplot(c(A=3, B=7, C=5), col = "steelblue", main = "Bar chart")
+```
+Histogram:
+```{r}
+# histogram
+hist(c(1,2,2,3,3,3,4,4,5), main = "Histogram", col = "tomato")
+```
+Box plot:
+```{r}
+# box plot
+boxplot(mpg ~ cyl, data = mtcars, main = "MPG by cylinders")
+```
+
+### Task 2: Expression data
+
+Read in the csv file and have a look at it with head and str
+```{r}
+data <- read.csv("basic_yeast_heatshock.csv")
+head(data)
+str(data)
+```
+
+
