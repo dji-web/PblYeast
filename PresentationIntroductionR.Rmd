@@ -3,7 +3,7 @@ title: "PresentationIntroductionR"
 output: html_document
 ---
 
-### Aufgabe1 Einführung in R mit W3 school
+## Aufgabe1 Einführung in R mit W3 school
 
 
 
@@ -15,16 +15,16 @@ For simple calculations just write out the equation.
 "Hello World"
 5 + 5
 ```
-For comments just write a # in front of the statement, there is no possebility for multiline comments with just one declaration.
+For comments just write a # in front of the statement, there is no possibility for multiline comments with just one declaration.
 
-For assigning variables you use variable <- value, there is no need to declare the data type. For printing out variables its enough to just write their names, although ther is also the possibility to use the print() function.
+For assigning variables you use variable <- value, there is no need to declare the data type. For printing out variables its enough to just write their names, although there is also the possibility to use the print() function.
 ```{r}
 name <- "Nick"
 age <- 21
-name
-age
+name 
+age  
 ```
-Data Types in R are quite similar to other programming languages, the declaration is a bit different and its more math based. The datatype can be shown with class().Important: Integers are marked with an L after the Value, and complex numbers are written with a imaginary and real part.
+Data Types in R are quite similar to other programming languages, the declaration is a bit different and its more math based. The datatype can be displayed with class().Important: Integers are signed/ marked with an L after the value, and complex numbers are written with a imaginary and real part.
 Basic Data Types are:
 ```{r}
 #numeric
@@ -36,6 +36,10 @@ x <- 100L
 class(x)
 #complex
 x <- 9i + 3
+class(x)
+
+#character/ string
+x <- "This is cool"
 class(x)
 
 #boolean
@@ -84,23 +88,38 @@ for (x in 1:10) {
   print(x)
 }
 ```
-With the break statement, we can stop the loop before it has looped through all the items, with the next statement, we can skip an iteration without terminating the loop.
+With the break statement, we can stop the loop before it has looped through all the items. With the next statement, we can skip an iteration without terminating the loop.
 ## Functions
 Creating a Function in R, you assign to a variable the function keyword, you call it with the name and normal brackets:
 function_name <- function(Arguments){
 what happens
 }
 function_name() calls the function
+To save the result of the function in a  variable, you assign the function to the variable using the assignment Operator 
 ```{r}
-first_function <- function(){
-  "Hello World"
+calculate_dice_vol <- function(length, width, height){
+  volume <- length * width * height
+  return(volume)
 }
-first_function()
+
+calculate_dice_vol(0.8, 1.6, 2.0)
+dice_vol <- calculate_dice_vol(0.8, 1.6, 2.0)
 ```
 R uses lexical scoping, the last evaluated expression is returned implicitly, and default parameters are defined in the signature.
 
+print() statement:
+R automatically prints the result of the very last lane in a code chunk. If you have multiple function calls, the only the last one will appear in the document in a report. By wrapping the calls in print(), every result of the code chunk will be displayed in the report
+```{r}
+my_function <- function(x){
+    return(5*x)
+}
+
+print(my_function(2))
+print(my_function(4))
+print(my_function(7))
+```
 ## The Apply Family
-The apply family in R is a set og functions that replaces explicit loops by applying a function to each element of a data structure, making code shorter and more readable. Each member of the family targets a different input shape and returns a different output type, so choosing the right one depends on what you're iterating over and what form you need the result in.
+The apply family in R is a set of functions that replaces explicit loops by applying a function to each element of a data structure, making code shorter and more readable. Each member of the family targets a different input shape and returns a different output type, so choosing the right one depends on what you're iterating over and what form you need the result in.
 
 Apply
 Input: matrix/array Output: vector/list
@@ -199,13 +218,151 @@ Box plot:
 boxplot(mpg ~ cyl, data = mtcars, main = "MPG by cylinders")
 ```
 
-### Task 2: Expression data
+## Task 2: Expression data
 
-Read in the csv file and have a look at it with head and str
-```{r}
-data <- read.csv("basic_yeast_heatshock.csv")
+Read in the csv file and have a look at it with head and str. To be sure, acitvating the path-finding tool with library(here) may help to prevent issues in finding the file.
+```{r import data}
+library(here)
+data <- read.csv(here("basic_yeast_heatshock.csv"))
 head(data)
 str(data)
 ```
 
+### Histograms 3x3 grid
+Plotting the first sample column to check, if everything works correctly and looks appropriate. In a histogram, the expression ca be briefly summarized.
+par() -> determine graphical parameters
+mfrow -> "Multi-Frame by row" (creates a grid)
+c(3, 3) -> 3 rows and 3 columns in the grid
+log2 Transformation to see the distribution comfortable 
+R automatically prepends an 'X' to the column headers because variable names in R cannot begin with a numerical character.
+```{r histograms}
+# Set up a 3x3 grid
+par(mfrow = c(3, 3))
 
+#Using a loop to plot the columns 2 to 10 (1 is gen_id), to only write the code once and #make it lucid
+for(i in 2:10){
+  hist(log2(data[, i] + 1),
+       main = colnames(data)[i],
+       xlab = "log2(counts + 1)",
+       col = "skyblue")
+}
+
+par(mfrow = c(1, 1))
+```
+
+### Calculate the quantiles to describe the distribution numerically
+```{r Quantiles}
+results <- matrix(ncol = 6, nrow = 9)
+colnames(results) <- c("Sample", "Q5", "Q25", "Q50", "Q75", "Q95")
+for(i in 2:10){
+  vals <- round(quantile(log2(data[, i] + 1), probs = c(0.05, 0.25, 0.5, 0.75, 0.95)), 2)
+  results[i-1, 1] <- colnames(data)[i]
+  results[i-1, 2:6] <- vals
+}
+results_df <- as.data.frame(results)
+print(results_df)
+knitr::kable(results_df)
+```
+
+### Creating scatterplots
+```{r creating scatterplots}
+par(mfrow  = c(2, 2))
+
+#Control Replicates (25°C)
+plot(log2(data[, 2] + 1), log2(data[, 3] +1),
+     main = "Replicates: 25°C r1 vs r2",
+     xlab = "25°C r1", ylab = "25°C r2",
+     pch = 16, col = rgb(0,0,0,0.1))
+abline(0, 1, col = "red")
+
+#Heatshock Replicates (42°C, 30 min)
+plot(log2(data[, 9] + 1), log2(data[, 10] + 1),
+     main = "Replicates: 42°C (30min) r2 vs r3",
+     xlab = "42°C 30min r2", ylab = "42°C 30min r3",
+     pch = 16, col = rgb(0,0,0,0.1))
+abline(0, 1, col = "red")
+
+#Baseline vs. 30 min
+plot(log2(data[, 2] + 1), log2(data[, 8] + 1),
+     main = "Control vs 30min Heatshock",
+     xlab = "25°C r1", ylab = "42°C 30min r1",
+     pch = 16, col = rgb(0,0,0,0.1))
+abline(0, 1, col = "red")
+
+#10 min vs. 30 min
+plot(log2(data[, 5] + 1), log2(data[, 8] + 1),
+     main = "10min vs 30min Heatshock",
+     xlab = "42°C 10min r1", ylab = "42°C 30min r1",
+     pch = 16, col = rgb(0,0,0,0.1))
+abline(0, 1, col = "red")
+
+par(mfrow = c(1, 1))
+```
+**Within the Same Condition (Top Row)**
+
+consistency in data:
+
+* Minimal Variance: In both the 25°C and 42°C (30min) plots, the dots align almost perfectly along the red y = x line.
+* Technical Quality: This tight clustering indicates very low difference between replicates, meaning your technical noise is low and the data is reliable.
+* Low-Count Dispersion: The only noticeable "spread" occurs at the very bottom left (low expression), which is normal in RNA-seq data.
+
+**Between Different Conditions (Bottom Row)**
+
+biological changes:
+
+* Increased Variance: In the "Control vs 30min Heatshock" plot, the "cloud" of dots is significantly wider than in the replicate plots.
+* Biological Response: The dots drifting away from the red line represent genes changing in response to heat. Dots above the line are genes increasing in expression at 30 minutes; dots below are decreasing.
+* Temporal Shift: The "10min vs 30min" plot shows that while the samples are more similar to each other than to the control, there is still active "fine-tuning" occurring between these two heat-shock time points.
+
+### Histogram raw vs. log2-transformed
+```{r histogram different counts}
+# 1. assigning the samples
+s_start <- data[, 2]  # 25_0_r1
+s_end   <- data[, 8]  # 42_30_r1
+
+# 2. Calculate Raw Difference
+raw_diff <- s_end - s_start
+
+# 3. Calculate Log2 Fold Change
+# +1 to avoid dividing by zero or taking log of zero
+log_fc <- log2((s_end + 1) / (s_start + 1))
+
+# 4. Plotting next to each other
+par(mfrow = c(1, 2))
+
+hist(raw_diff, breaks = 50, main = "Raw Difference", 
+     xlab = "End - Start", col = "skyblue")
+
+hist(log_fc, breaks = 50, main = "Log2 Fold Change", 
+     xlab = "log2(End/Start)", col = "salmon")
+
+par(mfrow = c(1, 1))
+```
+The raw distribution is not very useful because it's dominated by "outliers" (the most highly expressed genes). You can't see what's happening to the thousands of medium- and low-expression genes.
+
+This distribution looks much more like a normal distribution. It shows that while most genes stay near zero (no change), there is a balanced spread of genes being "upregulated" (right side) and "downregulated" (left side). This makes it much easier to identify significant biological shifts across the entire genome, not just the extremes.
+
+### Expression levels
+```{r zero counts}
+# 1. Count how many zeros exist in each gene
+row_zeros <- rowSums(data[, 2:10] == 0)
+
+# 2. See how many genes fall into each "zero category"
+# 0 means expressed in all samples, 9 means expressed in none
+zero_table <- table(row_zeros)
+print("Number of genes by zero-count frequency:")
+print(zero_table)
+
+# 3. Compare average expression levels; Calculate the mean for every gene
+row_means <- rowMeans(data[, 2:10])
+
+# Mean for genes with no zeros vs genes with 1 or more zeros
+mean_always_on <- mean(row_means[row_zeros == 0])
+mean_sporadic  <- mean(row_means[row_zeros > 0])
+
+cat("\nAvg count (Expressed in all 9):", round(mean_always_on, 2))
+cat("\nAvg count (Expressed in < 9):", round(mean_sporadic, 2))
+```
+Most genes (5678) are expressed in every single sample. Some genes (644) haven't been expressed and therefore likely to be inactive under the conditions. 
+The average count of expression in genes, that have been expressed in all samples and under all conditions, was 1035.93. All other genes have an average count of expression of 5.47.
+Therefore, the data shows a strong correlation between expression consistency and expression magnitude. Genes expressed in all 9 samples have a very high average count (~1036), suggesting they are core functional genes. In contrast, genes that are only  expressed to a lower extend (having at least one zero) have a very low average count (~5.5). This indicates that 'missing' data points in this set are primarily due to genes being expressed at the very limit of detection, rather than being high-expression genes that are suddenly 'shut off' entirely.
