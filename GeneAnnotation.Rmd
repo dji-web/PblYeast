@@ -80,7 +80,7 @@ using the poisson distribution, when Number of trials is large and the probabili
 The Parameter is Lambda
 
 ###A generative model for epitope detection
-```{r}
+```{r, eval=FALSE}
 load("../data/e100.RData")
 barplot(e100, ylim = c(0, 7), width = 0.7, xlim = c(-0.5, 100.5),
   names.arg = seq_along(e100), col = "darkolivegreen")
@@ -109,5 +109,5 @@ replicate(x, {}): replicates the code inside x-times
 max(rpois(100, 0.5)): takes the maximal value of 100 Poisson distributed numbers
 This simulation shows the distribution of the maximum number of mutations found in groups of 100 viruses. While the average is low (0.5), observing 3 or 4 mutations as a group maximum is very common.
 
-##Multinomial distribution: the case of DNA
+## Multinomial distribution: the case of DNA
 
