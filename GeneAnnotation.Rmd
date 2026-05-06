@@ -3,7 +3,7 @@ title: "GeneAnnotation"
 output: html_document
 ---
 
-#Chapter One: Generative Models for Discrete Data
+# Chapter One: Generative Models for Discrete Data
 
 ```{r - Poisson Distribution}
 #for one value
@@ -17,7 +17,7 @@ The first command means that the probability for 3 mutations in the genome after
 
 The Second code shows the probability for 0-12 mutations after one replication cycle in a barplot.
 
-##Using discrete probability models
+## Using discrete probability models
 
 ```{r - factors}
 
@@ -31,7 +31,7 @@ table(genotypeF)
 ```
 with factors, R automatically detects all the layers of a function and encodes the categorial variables. Levels define which values are allowed in a set of data.
 
-###Bernoulli trials
+### Bernoulli trials
 
 ```{r - binomial r-funktion}
 # r-functions generate tailored outcomes for each type of distribution
@@ -54,7 +54,7 @@ Number of successes, probability of success, Number of Trials
 
 This command counts the number of successful events in the same experiment as the second above (with the unequal probabilities). The number of unsuccessful events can be calculated as Number of Trials - Number of successes.
 
-###Binomial success counts
+### Binomial success counts
 
 ```{r}
 set.seed(235569515)
@@ -70,7 +70,7 @@ barplot(probabilities, names.arg = 0:15, col = "red")
 `round()`controls the number of printed decimal digits
 `names.arg`Labels the x-axis bars with the possible event outcomes
 
-###Poisson distributions
+### Poisson distributions
 ```{r}
 rbinom(1, prob = 5e-4, size = 10000)
 simulations = rbinom(n = 30000, prob = 5e-4, size = 10000)
@@ -79,7 +79,7 @@ barplot(table(simulations), sol = "lavender")
 using the poisson distribution, when Number of trials is large and the probability of success is small. 
 The Parameter is Lambda
 
-###A generative model for epitope detection
+### A generative model for epitope detection
 ```{r, eval=FALSE}
 load("../data/e100.RData")
 barplot(e100, ylim = c(0, 7), width = 0.7, xlim = c(-0.5, 100.5),
