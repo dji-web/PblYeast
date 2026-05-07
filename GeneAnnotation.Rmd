@@ -110,4 +110,49 @@ max(rpois(100, 0.5)): takes the maximal value of 100 Poisson distributed numbers
 This simulation shows the distribution of the maximum number of mutations found in groups of 100 viruses. While the average is low (0.5), observing 3 or 4 mutations as a group maximum is very common.
 
 ## Multinomial distribution: the case of DNA
+```{r}
+pvec = rep(1/4, 4)
+t(rmultinom(1, prob = pvec, size = 8))
+```
+**Parameters:**
+1/4: probability for success for each outcome
+4: number of replications
+1: number of vectors to generate
+prob: vector of probabilities
+size: number if events
+pvec creates a vector with the results of the multinomial distribution
+t() transponses (flips) a matrix or dataframe
+
+### Simulating for power
+```{r}
+obsunder0 = rmultinom(1000, prob = pvec, size = 20)
+dim(obsunder0)
+
+expected0 = pvec * 20
+sum((obsunder0[, 1] - expected0)^2 / expected0)
+```
+dim() returns the rows and columns of a matrix
+expected0: calculates the expected value
+obsunder0[, n] - expected0: calculates the difference between the observed and expected value of all rows in the column n
+/ expected0: standardization
+
+```{r - Chi^2}
+stat = function(obsvd, exptd = 20 * pvec) {
+  sum((obsvd - exptd)^2 / exptd)
+}
+stat(obsunder0[, 1])
+
+S0 = apply(obsunder0, 2, stat)
+summary(S0)
+
+hist(S0, breaks = 25, col = "lavender", main = "")
+
+q95 = quantile(S0, probs = 0.95)
+q95
+```
+apply(x, MARGIN, FUN): x = data source; MARGIN = direction (1 = rows, 2 = columns); FUN = applied function
+summary(): shows statistical indicators of the function
+hist(x, breaks, col, main): x = dataset, breaks = number of columns, col = folour, main = title
+quantile(x, probs): x = numeric vector whose quantiles are wanted (dataset); probs = numeric vector of probabilities [0, 1]
+
 
