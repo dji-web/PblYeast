@@ -112,13 +112,13 @@ This simulation shows the distribution of the maximum number of mutations found 
 ## Multinomial distribution: the case of DNA
 ```{r}
 pvec = rep(1/4, 4)
-t(rmultinom(1, prob = pvec, size = 8))
+t(rmultinom(1, prob = pvec, size = 8)) #rmultinom simulates categorical data
 ```
 **Parameters:**
 1/4: probability for success for each outcome
 4: number of replications
-1: number of vectors to generate
-prob: vector of probabilities
+rmultinom(n,  prob, size): n = number of independent simulations, prob = vector of probabilities (chance of each category), size = number of observations in each simulation
+1: number of vectors to generate 
 size: number if events
 pvec creates a vector with the results of the multinomial distribution
 t() transponses (flips) a matrix or dataframe
@@ -154,5 +154,25 @@ apply(x, MARGIN, FUN): x = data source; MARGIN = direction (1 = rows, 2 = column
 summary(): shows statistical indicators of the function
 hist(x, breaks, col, main): x = dataset, breaks = number of columns, col = folour, main = title
 quantile(x, probs): x = numeric vector whose quantiles are wanted (dataset); probs = numeric vector of probabilities [0, 1]
+
+```{r alternative Hypothesis}
+pvecA = c(3/8, 1/4, 1/4, 1/8)
+observed = rmultinom(1000, prob = pvecA, size = 20)
+dim(observed)
+apply(observed, 1, mean)
+expectedA = pvecA * 20
+expectedA
+stat(observed[, 1])
+S1 = apply(observed, 2, stat)
+q95
+sum(S1 > q95) #counts the successes of the simulation
+power = mean(S1 > q95) #the proportion of simulations where the test statistic exceeded the critical value
+power
+```
+An alternative Hypothesis for pvec, so calculation of power can be made
+The same structur than before, just with power analysis at the end
+sum(..., na.rm): ... = numerical, complex or logical vector, na.rm = should missing values be removed? (default = FALSE)
+mean(x, na.rm, trim): x = the object (numerical or logical vector), na.rm = should missing values be removed? (default = FALSE), trim = cuts off data at the extreme of x (remove outliers)
+
 
 
