@@ -174,5 +174,16 @@ The same structur than before, just with power analysis at the end
 sum(..., na.rm): ... = numerical, complex or logical vector, na.rm = should missing values be removed? (default = FALSE)
 mean(x, na.rm, trim): x = the object (numerical or logical vector), na.rm = should missing values be removed? (default = FALSE), trim = cuts off data at the extreme of x (remove outliers)
 
+# Chapter two: Statistical Modeling
+
+## A simple example of statistial modeling
+```{r eval=FALSE}
+rootogram() # diagnostic plot to evaluate the goodness of fit for probability models with lots of different parameters
+prod() # returns the product of all the values present in its arguments
+
+```
+
+
+
 
 

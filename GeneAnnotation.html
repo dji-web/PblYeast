@@ -391,10 +391,10 @@ allowed in a set of data.</p>
 <h3>Bernoulli trials</h3>
 <pre class="r"><code># r-functions generate tailored outcomes for each type of distribution
 rbinom(15, prob = 0.5, size = 1)</code></pre>
-<pre><code>##  [1] 0 0 1 0 0 1 0 0 0 1 0 1 0 0 0</code></pre>
+<pre><code>##  [1] 1 1 1 0 0 0 1 1 0 0 1 1 0 1 0</code></pre>
 <pre class="r"><code># withs unequal probabilities
 rbinom(12, prob = 2/3, size = 1)</code></pre>
-<pre><code>##  [1] 1 1 1 1 1 1 1 1 1 0 1 0</code></pre>
+<pre><code>##  [1] 1 1 0 1 1 1 1 0 1 1 0 1</code></pre>
 <p><strong>Parameters:</strong> Number of Trials, probability of
 success, repetitions per trial</p>
 <p>This code chunk represents binomial experiment. The first a coin toss
@@ -402,7 +402,7 @@ with equal probability of head and tail, the second one a ball drop into
 boxes with different sizes and therefore unequal probabilities.</p>
 <pre class="r"><code>#with changed parameters
 rbinom(1, prob = 2/3, size = 12)</code></pre>
-<pre><code>## [1] 6</code></pre>
+<pre><code>## [1] 8</code></pre>
 <p><strong>Parameters</strong>: Number of successes, probability of
 success, Number of Trials</p>
 <p>This command counts the number of successful events in the same
@@ -552,6 +552,14 @@ the object (numerical or logical vector), na.rm = should missing values
 be removed? (default = FALSE), trim = cuts off data at the extreme of x
 (remove outliers)</p>
 </div>
+</div>
+</div>
+<div id="chapter-two-statistical-modeling" class="section level1">
+<h1>Chapter two: Statistical Modeling</h1>
+<div id="a-simple-example-of-statistial-modeling" class="section level2">
+<h2>A simple example of statistial modeling</h2>
+<pre class="r"><code>rootogram() # diagnostic plot to evaluate the goodness of fit for probability models with lots of different parameters
+prod() # returns the product of all the values present in its arguments</code></pre>
 </div>
 </div>
 
