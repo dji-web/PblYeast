@@ -391,10 +391,10 @@ allowed in a set of data.</p>
 <h3>Bernoulli trials</h3>
 <pre class="r"><code># r-functions generate tailored outcomes for each type of distribution
 rbinom(15, prob = 0.5, size = 1)</code></pre>
-<pre><code>##  [1] 1 1 1 0 0 0 1 1 0 0 1 1 0 1 0</code></pre>
+<pre><code>##  [1] 1 1 0 0 1 0 0 0 1 0 1 1 1 0 1</code></pre>
 <pre class="r"><code># withs unequal probabilities
 rbinom(12, prob = 2/3, size = 1)</code></pre>
-<pre><code>##  [1] 1 1 0 1 1 1 1 0 1 1 0 1</code></pre>
+<pre><code>##  [1] 1 1 1 1 0 1 1 1 1 1 1 0</code></pre>
 <p><strong>Parameters:</strong> Number of Trials, probability of
 success, repetitions per trial</p>
 <p>This code chunk represents binomial experiment. The first a coin toss
@@ -546,7 +546,7 @@ power</code></pre>
 <pre><code>## [1] 0.206</code></pre>
 <p>An alternative Hypothesis for pvec, so calculation of power can be
 made The same structur than before, just with power analysis at the end
-sum(…, na.rm): … = numerical, complex or logical vector, na.rm = should
+sum(…, na.rm): … = numeric, complex or logical vector, na.rm = should
 missing values be removed? (default = FALSE) mean(x, na.rm, trim): x =
 the object (numerical or logical vector), na.rm = should missing values
 be removed? (default = FALSE), trim = cuts off data at the extreme of x
@@ -558,8 +558,149 @@ be removed? (default = FALSE), trim = cuts off data at the extreme of x
 <h1>Chapter two: Statistical Modeling</h1>
 <div id="a-simple-example-of-statistial-modeling" class="section level2">
 <h2>A simple example of statistial modeling</h2>
-<pre class="r"><code>rootogram() # diagnostic plot to evaluate the goodness of fit for probability models with lots of different parameters
-prod() # returns the product of all the values present in its arguments</code></pre>
+<pre class="r"><code>rootogram() # diagnostic plot to evaluate the goodness of fit for probability models - has  lots of different parameters
+prod() # returns the product of all the values present in its arguments
+abline()
+goodfit() #Check how well your observed data fit a theoretical probability distribution (such as the Poisson or Binomial distribution)</code></pre>
+<p>prod(…, na.rm): … = numeric, complex or logical parameter, na.rm =
+should missing values be removed? abline(a, b, v, h, coef, …, untf): a =
+intercept, b = slope, v = x-values for vertical lines, h = y-values for
+horizontal lines, coef = a vector of length two giving the intercept and
+slope, … = graphical parameters (col, lwd), untf = wether ignore the
+transformation of the axis for visualization goodfit(x, type, method): x
+= data, type = distribution to check the data, method = a character
+string indicating whether the distribution should be fit via ML (Maximum
+Likelihood) or Minimum Chi-squared.</p>
+<p>##Binomial distributions and maximum likelihood</p>
+<div id="likelihood-for-the-binomial-distribution" class="section level3">
+<h3>Likelihood for the binomial distribution</h3>
+<pre class="r"><code>loglikelihood = function(p, n = 300, y = 40) {
+  log(choose(n, y)) + y * log(p) + (n - y) * log(1 - p)
+}
+p_seq = seq(0, 1, by = 0.001)
+plot(p_seq, loglikelihood(p_seq), xlab = &quot;p&quot;, ylab = &quot;log f(p|y)&quot;, type = &quot;l&quot;)</code></pre>
+<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABUAAAAPACAMAAADDuCPrAAAAzFBMVEUAAAAAADoAAGYAOjoAOmYAOpAAZpAAZrY6AAA6OgA6Ojo6OmY6ZmY6ZpA6ZrY6kLY6kNtmAABmOgBmOjpmOmZmZjpmZmZmZpBmkJBmkLZmkNtmtttmtv+QOgCQZgCQZjqQZmaQkDqQkLaQtraQttuQtv+Q29uQ2/+2ZgC2Zjq2kDq2kGa2kJC2kLa2tpC2tra2ttu229u22/+2///bkDrbkGbbtmbbtpDbtrbb27bb29vb2//b////tmb/25D/27b/29v//7b//9v////pC2/zAAAACXBIWXMAAB2HAAAdhwGP5fFlAAAgAElEQVR4nO3dDXvbRnqoYSpxThRn7SZ2q62buM7ZpI1y3Ea247VjJ7Jj8v//p0OQ+qAkYkC8BAjM4L6vq11H/BCHJB4BJDCYLQAImQ39AAByJaAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChAkoABBAgoQJKAAQQIKECSgAEECChA07oDOADrT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" width="672" />
+An example to plot the likelihood for an binomial distribution with an
+maximum around 0.1333, and a flat curve at the maximum, so other values
+of p are almost equally likely</p>
+</div>
+</div>
+<div id="more-boxes-multinomial-data" class="section level2">
+<h2>More Boxes: multinomial data</h2>
+<pre class="r"><code># package &quot;Biostrings&quot; necessary (library(&quot;Biostrings&quot;))
+letterFrequency() # count occurrences of letters in biological sequence
+vapply() # 
+rowMeans() # Form row sums and means for numeric arrays
+colSums() # Form row and column sums and means for numeric arrays (or data frames)
+round() # rounds the values in its first argument to the specified number of decimal places (default 0)
+outer() # apply an operation to every possible combination of elements from two different arrays (here: Calculates the Expected Counts for the Chi-square test)</code></pre>
+<p>letterFrequency(x, letters, OR, as.prob, threshold, ambiguityMap): x
+= String/ StringSet/ StringViews/ MaskedString, letters = character
+vector with ““, OR = wie mit Mehrdeutigkeit umgegangen wird (0 -&gt;
+jeder einzeln,”|” -&gt; Gruppen bilden), as.prob = relative number
+between [0, 1] instead of absolut numbers, threshold = sets minimal
+value for counting, ambiguityMap = tells how to deal with fuzzy letters
+if DNASequancing isn`t clean Vapply(x, FUN, FUN.VALUE, …): x = vector,
+FUN = applied function, FUN.VALUE = generalized vector, … = optional
+arguments for FUN) rowMeans(x, dims): x = array of two or more
+dimensions (logical, numeric, complex, integer values), dims = Which
+dimensions are regarded as rows or columns to sum over colSums(x, dims):
+x = array of two or more dimensions, containing numeric, complex,
+integer or logical values, or a numeric data frame, dims = integer:
+Which dimensions are regarded as ‘rows’ or ‘columns’ to sum over
+round(x, digits): x = a numeric vector, digits = the number of decimal
+places you want to keep outer(X, Y, FUN, …): X and Y = first and second
+argument (mostly vector or array), FUN = a function to use on the outer
+products, … = optional arguments passed to FUN</p>
+<pre class="r"><code>qqplot() # Produces a QQ-Plot
+abline() # creates a line in a plot
+chisq.test() # performs chi-squared contingency table tests and goodness-of-fit tests</code></pre>
+<p>qqplot(x, y, asp, cex, pch): x numeric vector of observations, y =
+optional numeric vector of observations, asp = Aspect Rati0 (1 unit on
+x-axis = 1 unit on y-axis), cex = size of dots, pch = dots as solid
+circles abline(a, b, col): a = the y-intercept, b = the slope, col =
+colour of the line chisq.test(x, y, correct, p): x = numeric vector or
+matrix, y = a numeric vector; ignored if x is a matrix. If x is a
+factor, y should be a factor of the same length, correct = a logical
+indicating whether to apply continuity correction, p = a vector of
+probabilities of the same length of ‘x’</p>
+<pre class="r"><code>HWTernaryPlot() # draws a ternary plot for three-way genotypic compositions (AA,AB,BB), and represents the acceptance region for different tests for Hardy-Weinberg equilibrium (HWE) in the plot
+
+# library(&quot;seqLogo&quot;)
+seqLogo() # The function produces a sequence logo plot based on the contained sequences</code></pre>
+<p>HWTernaryPlot(X, markerlab, alpha, curvecols, mcex, vertex.cex): X =
+a matrix of n genotypic compositions or counts, markerlab = labels for
+the markers in the triangle, alpha = significance-level (default =
+0.05), curvecols = a vector with four colour specifications for the
+different curves that can be used to delimit the HW acceptance region,
+mcex = character expansion factor for the labels of the markers,
+vertex.cex = character expansion factor for the labels of the vertices
+seqLogo(pwm, ic.scale, base_scale): pwm = data (position weigth matrix
+with the four bases), ic.scale = If TRUE, the total height of one column
+is proportional to the information content at that position, base_scale
+= adjust the width of the letters</p>
+<div id="nucleotide-pattern-in-a-genome" class="section level3">
+<h3>Nucleotide pattern in a genome</h3>
+<pre class="r"><code>countPattern() # count the frequency of a pattern 
+matchPattern() # finding all the occurrences of a given pattern (how many &amp; where) -&gt; more powerful
+available.genomes # (package &quot;BSgenome&quot;) search engine or catalog for pre-packaged, full-genome sequences available on the Bioconductor servers
+expplot() # create an exponential probability plot</code></pre>
+<p>countPattern(pattern, subject, max.mismatich): pattern = sequence we
+look for, Sequence in which we search, max.mismatch = how many
+mismatches in a pattern are allowed (0 = identity) matchPattern(pattern,
+subject, max.mismatch, with.indels): pattern = sequence we look for,
+Sequence in which we search, max.mismatch = how many mismatches in a
+pattern are allowed (0 = identity), with.indel = indels are allowed
+available.genomes(pattern, type, splitName, biocuv): pattern: filter
+results, type = specifies the type of genome package, splitName =
+returns a data frame where the package name is broken down into parts
+(Provider, Species, Release), making it much easier to read, biocuv =
+Allows you to check for genomes compatible with a specific Bioconductor
+version expplot(x, rate, labels): x = test data, rate = the rate lambda
+is the inverse of the mean (1/mu), labels = Adds the label “fit” to the
+reference line on the plot</p>
+</div>
+<div id="modeling-in-the-case-of-dependencies" class="section level3">
+<h3>Modeling in the case of dependencies</h3>
+<p><strong>handle genomic coordinates (Bioconductor’s core
+infrastructure)</strong></p>
+<pre class="r"><code>read.table() # Reads a file in table format and creates a data frame from it
+with() # refer to columns in a data frame without typing the name of the data frame every single time
+IRanges() # creates an object that stores simple intervals (start and end points on a number line)
+GRanges() # takes those intervals and places them onto a specific biological map
+views() #Pairs coordinates with the actual DNA sequence string</code></pre>
+<p>read.table(file, header, sep, dec, skip, nrows): file = path to file,
+header = Set this to TRUE if the first row of your file contains the
+column names, sep = tells R how columns are divided (“” -&gt; white
+space; “,” -&gt; csv files, “ -&gt; tab-seperated files), dec = decmial
+point character (instead of comma), skip = number of lines to ignore at
+the beginning of the file before it starts reading data, nrows = limits
+the number of rows to read IRanges(start, end, width): start = beginning
+position of the feature, end = ending position, width = start + width
+instead start + end GRanges(seqnames, ranges, strand, genome):seqname =
+chromosome name, ranges = IRanges object, strand = direction of the DNA
+(”+“,”-“,”*“), genome = version of the assembly views(subject, ranges):
+subject = full DNA sequence, ranges = IRanges coordinates to look at</p>
+<pre class="r"><code>IdeogramTrack() # (package &quot;Gvis&quot;)creates a visual representation of a chromosome, showing its cytogenetic bands (the light and dark patterns) and your current location 
+plotTracks() # (package &quot;Gvis&quot;) Draws &quot;Browser&quot; style tracks (like the UCSC Genome Browser)
+as() #core R function used for coercion, which means forcing an object from one class (type) into another
+rowSums() #calculate the totals for each row in a numeric matrix or data frame</code></pre>
+<p>IdeogramTrak(genome, chromosome, name, showId): genome = assembly
+version, chromosome = chromosome to display, name = label on the side of
+the plot, showId = shows chromosome name [TRUE/ FALSE]
+plotTracks(trackList, from/ to): trackList = list of track objects,
+from/ to = genomic range to display on the x-axis as(object, Class):
+object = data you currently have, Class = target format rowSums(x,
+na.rm, dims): x = numeric array, matrix, data frame, na.rm = ignore
+missing values?, dims = which dimension in a multidimensional array</p>
+<pre class="r"><code>alphabetFrequency() # count the occurrences of every letter in the DNA alphabet
+ncol() # returns the number of columns
+pmax() # compares vector element-wise and returns the maximum</code></pre>
+<p>alphabetFrequency(x, as.prob. baseOnly): x = input sequence, as.prob
+= returne relative frequencies, baseOnly = only counts A, C, G, T and
+the rest in “other” ncol(x): x = matrix or data frame pmax(…): … = two
+or more vectors</p>
+</div>
 </div>
 </div>
 
