@@ -183,9 +183,9 @@ prod() # returns the product of all the values present in its arguments
 abline()
 goodfit() #Check how well your observed data fit a theoretical probability distribution (such as the Poisson or Binomial distribution)
 ```
-prod(..., na.rm): ... = numeric, complex or logical parameter, na.rm = should missing values be removed?
-abline(a, b, v, h, coef, ..., untf): a = intercept, b = slope, v = x-values for vertical lines, h = y-values for horizontal lines, coef = a vector of length two giving the intercept and slope, ... = graphical parameters (col, lwd), untf = wether ignore the  transformation of the axis for visualization
-goodfit(x, type, method): x = data, type = distribution to check the data, method = a character string indicating whether the distribution should be fit via ML (Maximum Likelihood) or Minimum Chi-squared.
+* prod(..., na.rm): ... = numeric, complex or logical parameter, na.rm = should missing values be removed?
+* abline(a, b, v, h, coef, ..., untf): a = intercept, b = slope, v = x-values for vertical lines, h = y-values for horizontal lines, coef = a vector of length two giving the intercept and slope, ... = graphical parameters (col, lwd), untf = wether ignore the  transformation of the axis for visualization
+* goodfit(x, type, method): x = data, type = distribution to check the data, method = a character string indicating whether the distribution should be fit via ML (Maximum Likelihood) or Minimum Chi-squared.
 
 ##Binomial distributions and maximum likelihood
 
@@ -210,12 +210,12 @@ round() # rounds the values in its first argument to the specified number of dec
 outer() # apply an operation to every possible combination of elements from two different arrays (here: Calculates the Expected Counts for the Chi-square test)
 
 ```
-letterFrequency(x, letters, OR, as.prob, threshold, ambiguityMap): x = String/ StringSet/ StringViews/ MaskedString, letters = character vector with "", OR = wie mit Mehrdeutigkeit umgegangen wird (0 -> jeder einzeln, "|" -> Gruppen bilden), as.prob = relative number between [0, 1] instead of absolut numbers, threshold = sets minimal value for counting, ambiguityMap = tells how to deal with fuzzy letters if DNASequancing isn`t clean 
-Vapply(x, FUN, FUN.VALUE, ...): x = vector, FUN = applied function, FUN.VALUE = generalized vector, ... = optional arguments for FUN)
-rowMeans(x, dims): x = array of two or more dimensions (logical, numeric, complex, integer values), dims = Which dimensions are regarded as rows or columns to sum over
-colSums(x, dims): x = array of two or more dimensions, containing numeric, complex, integer or logical values, or a numeric data frame, dims = integer: Which dimensions are regarded as ‘rows’ or ‘columns’ to sum over
-round(x, digits): x = a numeric vector, digits = the number of decimal places you want to keep
-outer(X, Y, FUN, ...): X and Y = first and second argument (mostly vector or array), FUN =  a function to use on the outer products, ... = optional arguments passed to FUN
+* letterFrequency(x, letters, OR, as.prob, threshold, ambiguityMap): x = String/ StringSet/ StringViews/ MaskedString, letters = character vector with "", OR = wie mit Mehrdeutigkeit umgegangen wird (0 -> jeder einzeln, "|" -> Gruppen bilden), as.prob = relative number between [0, 1] instead of absolut numbers, threshold = sets minimal value for counting, ambiguityMap = tells how to deal with fuzzy letters if DNASequancing isn`t clean
+* vapply(x, FUN, FUN.VALUE, ...): x = vector, FUN = applied function, FUN.VALUE = generalized vector, ... = optional arguments for FUN)
+* rowMeans(x, dims): x = array of two or more dimensions (logical, numeric, complex, integer values), dims = Which dimensions are regarded as rows or columns to sum over
+* colSums(x, dims): x = array of two or more dimensions, containing numeric, complex, integer or logical values, or a numeric data frame, dims = integer: Which dimensions are regarded as ‘rows’ or ‘columns’ to sum over
+* round(x, digits): x = a numeric vector, digits = the number of decimal places you want to keep
+* outer(X, Y, FUN, ...): X and Y = first and second argument (mostly vector or array), FUN =  a function to use on the outer products, ... = optional arguments passed to FUN
 
 ```{r eval = FALSE}
 qqplot() # Produces a QQ-Plot
@@ -223,9 +223,9 @@ abline() # creates a line in a plot
 chisq.test() # performs chi-squared contingency table tests and goodness-of-fit tests
 
 ```
-qqplot(x, y, asp, cex, pch): x  numeric vector of observations, y = optional numeric vector of observations, asp = Aspect Rati0 (1 unit on x-axis = 1 unit on y-axis), cex = size of dots, pch = dots as solid circles 
-abline(a, b, col): a = the y-intercept, b = the slope, col = colour of the line
-chisq.test(x, y, correct, p): x = numeric vector or matrix, y = a numeric vector; ignored if x is a matrix. If x is a factor, y should be a factor of the same length, correct =  a logical indicating whether to apply continuity correction, p = a vector of probabilities of the same length of 'x'
+* qqplot(x, y, asp, cex, pch): x  numeric vector of observations, y = optional numeric vector of observations, asp = Aspect Rati0 (1 unit on x-axis = 1 unit on y-axis), cex = size of dots, pch = dots as solid circles 
+* abline(a, b, col): a = the y-intercept, b = the slope, col = colour of the line
+* chisq.test(x, y, correct, p): x = numeric vector or matrix, y = a numeric vector; ignored if x is a matrix. If x is a factor, y should be a factor of the same length, correct =  a logical indicating whether to apply continuity correction, p = a vector of probabilities of the same length of 'x'
 
 ```{r eval = FALSE, Hardy-Weinberg-equilibrium}
 HWTernaryPlot() # draws a ternary plot for three-way genotypic compositions (AA,AB,BB), and represents the acceptance region for different tests for Hardy-Weinberg equilibrium (HWE) in the plot
@@ -233,8 +233,8 @@ HWTernaryPlot() # draws a ternary plot for three-way genotypic compositions (AA,
 # library("seqLogo")
 seqLogo() # The function produces a sequence logo plot based on the contained sequences
 ```
-HWTernaryPlot(X, markerlab, alpha, curvecols, mcex, vertex.cex): X = a matrix of n genotypic compositions or counts, markerlab = labels for the markers in the triangle, alpha = significance-level (default = 0.05), curvecols = a vector with four colour specifications for the different curves that can be used to delimit the HW acceptance region, mcex = character expansion factor for the labels of the markers, vertex.cex = character expansion factor for the labels of the vertices
-seqLogo(pwm, ic.scale, base_scale): pwm = data (position weigth matrix with the four bases), ic.scale = If TRUE, the total height of one column is proportional to the information content at that position, base_scale = adjust the width of the letters
+* HWTernaryPlot(X, markerlab, alpha, curvecols, mcex, vertex.cex): X = a matrix of n genotypic compositions or counts, markerlab = labels for the markers in the triangle, alpha = significance-level (default = 0.05), curvecols = a vector with four colour specifications for the different curves that can be used to delimit the HW acceptance region, mcex = character expansion factor for the labels of the markers, vertex.cex = character expansion factor for the labels of the vertices
+* seqLogo(pwm, ic.scale, base_scale): pwm = data (position weigth matrix with the four bases), ic.scale = If TRUE, the total height of one column is proportional to the information content at that position, base_scale = adjust the width of the letters
 
 ### Nucleotide pattern in a genome
 
@@ -244,10 +244,10 @@ matchPattern() # finding all the occurrences of a given pattern (how many & wher
 available.genomes # (package "BSgenome") search engine or catalog for pre-packaged, full-genome sequences available on the Bioconductor servers
 expplot() # create an exponential probability plot
 ```
-countPattern(pattern, subject, max.mismatich): pattern = sequence we look for, Sequence in which we search, max.mismatch = how many mismatches in a pattern are allowed (0 = identity)
-matchPattern(pattern, subject, max.mismatch, with.indels): pattern = sequence we look for, Sequence in which we search, max.mismatch = how many mismatches in a pattern are allowed (0 = identity), with.indel = indels are allowed
+* countPattern(pattern, subject, max.mismatich): pattern = sequence we look for, Sequence in which we search, max.mismatch = how many mismatches in a pattern are allowed (0 = identity)
+* matchPattern(pattern, subject, max.mismatch, with.indels): pattern = sequence we look for, Sequence in which we search, max.mismatch = how many mismatches in a pattern are allowed (0 = identity), with.indel = indels are allowed
 available.genomes(pattern, type, splitName, biocuv): pattern: filter results, type = specifies the type of genome package, splitName = returns a data frame where the package name is broken down into parts (Provider, Species, Release), making it much easier to read, biocuv = Allows you to check for genomes compatible with a specific Bioconductor version
-expplot(x, rate, labels): x = test data, rate = the rate lambda is the inverse of the mean (1/mu), labels = Adds the label "fit" to the reference line on the plot
+* expplot(x, rate, labels): x = test data, rate = the rate lambda is the inverse of the mean (1/mu), labels = Adds the label "fit" to the reference line on the plot
 
 ### Modeling in the case of dependencies
 
@@ -259,10 +259,10 @@ IRanges() # creates an object that stores simple intervals (start and end points
 GRanges() # takes those intervals and places them onto a specific biological map
 views() #Pairs coordinates with the actual DNA sequence string
 ```
-read.table(file, header, sep, dec, skip, nrows): file = path to file, header = Set this to TRUE if the first row of your file contains the column names, sep = tells R how columns are divided ("" -> white space; "," -> csv files, "\t" -> tab-seperated files), dec = decmial point character (instead of comma), skip = number of lines to ignore at the beginning of the file before it starts reading data, nrows = limits the number of rows to read
-IRanges(start, end, width): start = beginning position of the feature, end = ending position, width = start + width instead start + end
-GRanges(seqnames, ranges, strand, genome):seqname = chromosome name, ranges = IRanges object, strand = direction of the DNA ("+", "-", "*"), genome = version of the assembly
-views(subject, ranges): subject = full DNA sequence, ranges = IRanges coordinates to look at
+* read.table(file, header, sep, dec, skip, nrows): file = path to file, header = Set this to TRUE if the first row of your file contains the column names, sep = tells R how columns are divided ("" -> white space; "," -> csv files, "\t" -> tab-seperated files), dec = decmial point character (instead of comma), skip = number of lines to ignore at the beginning of the file before it starts reading data, nrows = limits the number of rows to read
+* IRanges(start, end, width): start = beginning position of the feature, end = ending position, width = start + width instead start + end
+* GRanges(seqnames, ranges, strand, genome):seqname = chromosome name, ranges = IRanges object, strand = direction of the DNA ("+", "-", "*"), genome = version of the assembly
+* views(subject, ranges): subject = full DNA sequence, ranges = IRanges coordinates to look at
 
 
 ```{r eval=FALSE}
@@ -272,10 +272,10 @@ as() #core R function used for coercion, which means forcing an object from one 
 rowSums() #calculate the totals for each row in a numeric matrix or data frame
 
 ```
-IdeogramTrak(genome, chromosome, name, showId): genome = assembly version, chromosome = chromosome to display, name = label on the side of the plot, showId = shows chromosome name [TRUE/ FALSE]
-plotTracks(trackList, from/ to): trackList = list of track objects, from/ to = genomic range to display on the x-axis
-as(object, Class): object = data you currently have, Class = target format
-rowSums(x, na.rm, dims): x = numeric array, matrix, data frame, na.rm = ignore missing values?, dims = which dimension in a multidimensional array
+* IdeogramTrak(genome, chromosome, name, showId): genome = assembly version, chromosome = chromosome to display, name = label on the side of the plot, showId = shows chromosome name [TRUE/ FALSE]
+* plotTracks(trackList, from/ to): trackList = list of track objects, from/ to = genomic range to display on the x-axis
+* as(object, Class): object = data you currently have, Class = target format
+* rowSums(x, na.rm, dims): x = numeric array, matrix, data frame, na.rm = ignore missing values?, dims = which dimension in a multidimensional array
 
 ```{r eval = FALSE}
 alphabetFrequency() # count the occurrences of every letter in the DNA alphabet
@@ -283,9 +283,9 @@ ncol() # returns the number of columns
 pmax() # compares vector element-wise and returns the maximum
 
 ```
-alphabetFrequency(x, as.prob. baseOnly): x = input sequence, as.prob = returne relative frequencies, baseOnly = only counts A, C, G, T and the rest in "other"
-ncol(x): x = matrix or data frame
-pmax(...): ... = two or more vectors
+* alphabetFrequency(x, as.prob. baseOnly): x = input sequence, as.prob = returne relative frequencies, baseOnly = only counts A, C, G, T and the rest in "other"
+* ncol(x): x = matrix or data frame
+* pmax(...): ... = two or more vectors
 
 
 
