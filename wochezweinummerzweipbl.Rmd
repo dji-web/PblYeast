@@ -1,0 +1,418 @@
+---
+title: "GeneAnnotation"
+output: html_document
+---
+
+# Chapter One: Generative Models for Discrete Data
+
+```{r - Poisson Distribution}
+#for one value
+dpois(x = 3, lambda = 5)
+
+#for several values instead of a loop
+dpois(x = 0:12, lambda = 5)
+barplot(dpois(0:12, 5), names.arg = 0:12, col = "red")
+```
+The first command means that the probability for 3 mutations in the genome after one replication cycle is 0.14 percent
+
+The Second code shows the probability for 0-12 mutations after one replication cycle in a barplot.
+
+## Using discrete probability models
+
+```{r - factors}
+
+genotype = c("AA","AO","BB","AO","OO","AO","AA","BO","BO","AO","BB","AO","BO","AB","OO","AB","BB","AO","AO")
+table(genotype)
+
+#with factor:
+genotypeF =  factor(genotype)
+levels(genotypeF)
+table(genotypeF)
+```
+with factors, R automatically detects all the layers of a function and encodes the categorial variables. Levels define which values are allowed in a set of data.
+
+### Bernoulli trials
+
+```{r - binomial r-funktion}
+# r-functions generate tailored outcomes for each type of distribution
+rbinom(15, prob = 0.5, size = 1)
+
+# withs unequal probabilities
+rbinom(12, prob = 2/3, size = 1)
+```
+**Parameters:**
+Number of Trials, probability of success, repetitions per trial
+
+This code chunk represents binomial experiment. The first a coin toss with equal probability of head and tail, the second one a ball drop into boxes with different sizes and therefore unequal probabilities. 
+
+```{r}
+#with changed parameters
+rbinom(1, prob = 2/3, size = 12)
+```
+**Parameters**:
+Number of successes, probability of success, Number of Trials
+
+This command counts the number of successful events in the same experiment as the second above (with the unequal probabilities). The number of unsuccessful events can be calculated as Number of Trials - Number of successes.
+
+### Binomial success counts
+
+```{r}
+set.seed(235569515)
+rbinom(1, prob = 0.3, size = 15)
+```
+`set.seed` determines a starting point for the trials, so that the outcome always stays the same. This is important to reproduce experiments (reliability).
+
+```{r}
+probabilities = dbinom(0:15, prob = 0.3, size = 15)
+round(probabilities, 2)
+barplot(probabilities, names.arg = 0:15, col = "red")
+```
+`round()`controls the number of printed decimal digits
+`names.arg`Labels the x-axis bars with the possible event outcomes
+
+### Poisson distributions
+```{r}
+rbinom(1, prob = 5e-4, size = 10000)
+simulations = rbinom(n = 30000, prob = 5e-4, size = 10000)
+barplot(table(simulations), sol = "lavender")
+```
+using the poisson distribution, when Number of trials is large and the probability of success is small. 
+The Parameter is Lambda
+
+### A generative model for epitope detection
+```{r, eval=FALSE}
+load("../data/e100.RData")
+barplot(e100, ylim = c(0, 7), width = 0.7, xlim = c(-0.5, 100.5),
+  names.arg = seq_along(e100), col = "darkolivegreen")
+```
+**Parameter:**
+e100: data which is plotted
+ylim: sets y-axis
+width: width of the bars
+xlim: setzs x-axis
+names.arg = seq_along(e100): generates Numbers from 1 to 100 and labels the x-axis
+
+```{r}
+1 - ppois(6, 0.5)
+ppois(6, 0.5, lower.tail = FALSE)
+```
+Both commands yield the same result. ppois(x, lambda) calculates the probability of x or fewer results. By setting lower.tail = FALSE, the command calculates the probability for strictly more than x results (P(X > x)).
+
+```{r - monte-carlo-simulation}
+maxes = replicate(100000, {
+  max(rpois(100, 0.5))
+})
+table(maxes)
+```
+**Parameter:**
+replicate(x, {}): replicates the code inside x-times
+max(rpois(100, 0.5)): takes the maximal value of 100 Poisson distributed numbers
+This simulation shows the distribution of the maximum number of mutations found in groups of 100 viruses. While the average is low (0.5), observing 3 or 4 mutations as a group maximum is very common.
+
+## Multinomial distribution: the case of DNA
+```{r}
+pvec = rep(1/4, 4)
+t(rmultinom(1, prob = pvec, size = 8)) #rmultinom simulates categorical data
+```
+**Parameters:**
+1/4: probability for success for each outcome
+4: number of replications
+rmultinom(n,  prob, size): n = number of independent simulations, prob = vector of probabilities (chance of each category), size = number of observations in each simulation
+1: number of vectors to generate 
+size: number if events
+pvec creates a vector with the results of the multinomial distribution
+t() transponses (flips) a matrix or dataframe
+
+### Simulating for power
+```{r}
+obsunder0 = rmultinom(1000, prob = pvec, size = 20)
+dim(obsunder0)
+
+expected0 = pvec * 20
+sum((obsunder0[, 1] - expected0)^2 / expected0)
+```
+dim() returns the rows and columns of a matrix
+expected0: calculates the expected value
+obsunder0[, n] - expected0: calculates the difference between the observed and expected value of all rows in the column n
+/ expected0: standardization
+
+```{r - Chi^2}
+stat = function(obsvd, exptd = 20 * pvec) {
+  sum((obsvd - exptd)^2 / exptd)
+}
+stat(obsunder0[, 1])
+
+S0 = apply(obsunder0, 2, stat)
+summary(S0)
+
+hist(S0, breaks = 25, col = "lavender", main = "")
+
+q95 = quantile(S0, probs = 0.95)
+q95
+```
+apply(x, MARGIN, FUN): x = data source; MARGIN = direction (1 = rows, 2 = columns); FUN = applied function
+summary(): shows statistical indicators of the function
+hist(x, breaks, col, main): x = dataset, breaks = number of columns, col = folour, main = title
+quantile(x, probs): x = numeric vector whose quantiles are wanted (dataset); probs = numeric vector of probabilities [0, 1]
+
+```{r alternative Hypothesis}
+pvecA = c(3/8, 1/4, 1/4, 1/8)
+observed = rmultinom(1000, prob = pvecA, size = 20)
+dim(observed)
+apply(observed, 1, mean)
+expectedA = pvecA * 20
+expectedA
+stat(observed[, 1])
+S1 = apply(observed, 2, stat)
+q95
+sum(S1 > q95) #counts the successes of the simulation
+power = mean(S1 > q95) #the proportion of simulations where the test statistic exceeded the critical value
+power
+```
+An alternative Hypothesis for pvec, so calculation of power can be made
+The same structur than before, just with power analysis at the end
+sum(..., na.rm): ... = numeric, complex or logical vector, na.rm = should missing values be removed? (default = FALSE)
+mean(x, na.rm, trim): x = the object (numerical or logical vector), na.rm = should missing values be removed? (default = FALSE), trim = cuts off data at the extreme of x (remove outliers)
+
+# Chapter two: Statistical Modeling
+
+## A simple example of statistial modeling
+```{r eval=FALSE}
+rootogram() # diagnostic plot to evaluate the goodness of fit for probability models - has  lots of different parameters
+prod() # returns the product of all the values present in its arguments
+abline()
+goodfit() #Check how well your observed data fit a theoretical probability distribution (such as the Poisson or Binomial distribution)
+```
+* prod(..., na.rm): ... = numeric, complex or logical parameter, na.rm = should missing values be removed?
+* abline(a, b, v, h, coef, ..., untf): a = intercept, b = slope, v = x-values for vertical lines, h = y-values for horizontal lines, coef = a vector of length two giving the intercept and slope, ... = graphical parameters (col, lwd), untf = wether ignore the  transformation of the axis for visualization
+* goodfit(x, type, method): x = data, type = distribution to check the data, method = a character string indicating whether the distribution should be fit via ML (Maximum Likelihood) or Minimum Chi-squared.
+
+##Binomial distributions and maximum likelihood
+
+### Likelihood for the binomial distribution
+```{r}
+loglikelihood = function(p, n = 300, y = 40) {
+  log(choose(n, y)) + y * log(p) + (n - y) * log(1 - p)
+}
+p_seq = seq(0, 1, by = 0.001)
+plot(p_seq, loglikelihood(p_seq), xlab = "p", ylab = "log f(p|y)", type = "l")
+```
+An example to plot the likelihood for an binomial distribution with an maximum around 0.1333, and a flat curve at the maximum, so other values of p are almost equally likely
+
+## More Boxes: multinomial data
+```{r eval = FALSE}
+# package "Biostrings" necessary (library("Biostrings"))
+letterFrequency() # count occurrences of letters in biological sequence
+vapply() # 
+rowMeans() # Form row sums and means for numeric arrays
+colSums() # Form row and column sums and means for numeric arrays (or data frames)
+round() # rounds the values in its first argument to the specified number of decimal places (default 0)
+outer() # apply an operation to every possible combination of elements from two different arrays (here: Calculates the Expected Counts for the Chi-square test)
+
+```
+* letterFrequency(x, letters, OR, as.prob, threshold, ambiguityMap): x = String/ StringSet/ StringViews/ MaskedString, letters = character vector with "", OR = wie mit Mehrdeutigkeit umgegangen wird (0 -> jeder einzeln, "|" -> Gruppen bilden), as.prob = relative number between [0, 1] instead of absolut numbers, threshold = sets minimal value for counting, ambiguityMap = tells how to deal with fuzzy letters if DNASequancing isn`t clean
+* vapply(x, FUN, FUN.VALUE, ...): x = vector, FUN = applied function, FUN.VALUE = generalized vector, ... = optional arguments for FUN)
+* rowMeans(x, dims): x = array of two or more dimensions (logical, numeric, complex, integer values), dims = Which dimensions are regarded as rows or columns to sum over
+* colSums(x, dims): x = array of two or more dimensions, containing numeric, complex, integer or logical values, or a numeric data frame, dims = integer: Which dimensions are regarded as ‘rows’ or ‘columns’ to sum over
+* round(x, digits): x = a numeric vector, digits = the number of decimal places you want to keep
+* outer(X, Y, FUN, ...): X and Y = first and second argument (mostly vector or array), FUN =  a function to use on the outer products, ... = optional arguments passed to FUN
+
+```{r eval = FALSE}
+qqplot() # Produces a QQ-Plot
+abline() # creates a line in a plot
+chisq.test() # performs chi-squared contingency table tests and goodness-of-fit tests
+
+```
+* qqplot(x, y, asp, cex, pch): x  numeric vector of observations, y = optional numeric vector of observations, asp = Aspect Rati0 (1 unit on x-axis = 1 unit on y-axis), cex = size of dots, pch = dots as solid circles 
+* abline(a, b, col): a = the y-intercept, b = the slope, col = colour of the line
+* chisq.test(x, y, correct, p): x = numeric vector or matrix, y = a numeric vector; ignored if x is a matrix. If x is a factor, y should be a factor of the same length, correct =  a logical indicating whether to apply continuity correction, p = a vector of probabilities of the same length of 'x'
+
+```{r eval = FALSE, Hardy-Weinberg-equilibrium}
+HWTernaryPlot() # draws a ternary plot for three-way genotypic compositions (AA,AB,BB), and represents the acceptance region for different tests for Hardy-Weinberg equilibrium (HWE) in the plot
+
+# library("seqLogo")
+seqLogo() # The function produces a sequence logo plot based on the contained sequences
+```
+* HWTernaryPlot(X, markerlab, alpha, curvecols, mcex, vertex.cex): X = a matrix of n genotypic compositions or counts, markerlab = labels for the markers in the triangle, alpha = significance-level (default = 0.05), curvecols = a vector with four colour specifications for the different curves that can be used to delimit the HW acceptance region, mcex = character expansion factor for the labels of the markers, vertex.cex = character expansion factor for the labels of the vertices
+* seqLogo(pwm, ic.scale, base_scale): pwm = data (position weigth matrix with the four bases), ic.scale = If TRUE, the total height of one column is proportional to the information content at that position, base_scale = adjust the width of the letters
+
+### Nucleotide pattern in a genome
+
+```{r eval = FALSE}
+countPattern() # count the frequency of a pattern 
+matchPattern() # finding all the occurrences of a given pattern (how many & where) -> more powerful
+available.genomes # (package "BSgenome") search engine or catalog for pre-packaged, full-genome sequences available on the Bioconductor servers
+expplot() # create an exponential probability plot
+```
+* countPattern(pattern, subject, max.mismatich): pattern = sequence we look for, Sequence in which we search, max.mismatch = how many mismatches in a pattern are allowed (0 = identity)
+* matchPattern(pattern, subject, max.mismatch, with.indels): pattern = sequence we look for, Sequence in which we search, max.mismatch = how many mismatches in a pattern are allowed (0 = identity), with.indel = indels are allowed
+available.genomes(pattern, type, splitName, biocuv): pattern: filter results, type = specifies the type of genome package, splitName = returns a data frame where the package name is broken down into parts (Provider, Species, Release), making it much easier to read, biocuv = Allows you to check for genomes compatible with a specific Bioconductor version
+* expplot(x, rate, labels): x = test data, rate = the rate lambda is the inverse of the mean (1/mu), labels = Adds the label "fit" to the reference line on the plot
+
+### Modeling in the case of dependencies
+
+**handle genomic coordinates (Bioconductor's core infrastructure)**
+```{r eval=FALSE}
+read.table() # Reads a file in table format and creates a data frame from it
+with() # refer to columns in a data frame without typing the name of the data frame every single time
+IRanges() # creates an object that stores simple intervals (start and end points on a number line)
+GRanges() # takes those intervals and places them onto a specific biological map
+views() #Pairs coordinates with the actual DNA sequence string
+```
+* read.table(file, header, sep, dec, skip, nrows): file = path to file, header = Set this to TRUE if the first row of your file contains the column names, sep = tells R how columns are divided ("" -> white space; "," -> csv files, "\t" -> tab-seperated files), dec = decmial point character (instead of comma), skip = number of lines to ignore at the beginning of the file before it starts reading data, nrows = limits the number of rows to read
+* IRanges(start, end, width): start = beginning position of the feature, end = ending position, width = start + width instead start + end
+* GRanges(seqnames, ranges, strand, genome):seqname = chromosome name, ranges = IRanges object, strand = direction of the DNA ("+", "-", "*"), genome = version of the assembly
+* views(subject, ranges): subject = full DNA sequence, ranges = IRanges coordinates to look at
+
+
+```{r eval=FALSE}
+IdeogramTrack() # (package "Gvis")creates a visual representation of a chromosome, showing its cytogenetic bands (the light and dark patterns) and your current location 
+plotTracks() # (package "Gvis") Draws "Browser" style tracks (like the UCSC Genome Browser)
+as() #core R function used for coercion, which means forcing an object from one class (type) into another
+rowSums() #calculate the totals for each row in a numeric matrix or data frame
+
+```
+* IdeogramTrak(genome, chromosome, name, showId): genome = assembly version, chromosome = chromosome to display, name = label on the side of the plot, showId = shows chromosome name [TRUE/ FALSE]
+* plotTracks(trackList, from/ to): trackList = list of track objects, from/ to = genomic range to display on the x-axis
+* as(object, Class): object = data you currently have, Class = target format
+* rowSums(x, na.rm, dims): x = numeric array, matrix, data frame, na.rm = ignore missing values?, dims = which dimension in a multidimensional array
+
+```{r eval = FALSE}
+alphabetFrequency() # count the occurrences of every letter in the DNA alphabet
+ncol() # returns the number of columns
+pmax() # compares vector element-wise and returns the maximum
+
+```
+* alphabetFrequency(x, as.prob. baseOnly): x = input sequence, as.prob = returne relative frequencies, baseOnly = only counts A, C, G, T and the rest in "other"
+* ncol(x): x = matrix or data frame
+* pmax(...): ... = two or more vectors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Task 2
+We found following information in the gtf file:
+# Functional Category:
+Protein Coding, IncRNA, Pseudogene
+# genomic feature:
+gene, transcript, exon, start_codon, stop_codon, CDS
+# gene Id
+identifier for the specific gene
+# gene name
+human readable gene symbol
+# gene source
+ensembl 
+# strand
++ forward, - reverse, . unknown
+
+## File structure
+The file is structured, so that for each gene first the gene gets listed, then below the transcript of that gene, then the exon, then CDS which is the coding sequence without stop codon, then start codon gets listed and then the stop codon. We only found examples with just one transcript, that makes sense because Yeast genome is simpler then the human genome, so mostly just one transcript per genome.
+
+## File
+R64-1-1 is the Referenzsequenz of Bäckerhefe Saccharmomyces cerevisiae.
+The date it got published is  September 2011, so already a bit older, latest change was December 2011.
+The acession number is: GCA_000146045.2 which is the official NCBI Identifier.
+
+Load data into R:
+```{r}
+gtf <- rtracklayer::import('Saccharomyces_cerevisiae.R64-1-1.75.gtf')
+```
+
+
+```{r}
+gtf_df <- as.data.frame(gtf)# als Dataframe konvertieren
+```
+```{r}
+head(gtf)
+length(gtf)
+```
+It has a length of 42247 lines.
+
+## Next we look at the file with R
+
+```{r}
+library(ggplot2)# library ggplot laden
+ggplot(gtf_df, aes(x = seqnames)) +
+  geom_bar() +
+  labs(title = "Sequencname", x = "Chromosom", y = "Anzahl") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+ggplot(gtf_df, aes(x = gene_source)) +
+  geom_bar() +
+  labs(title = "Source of data", x = "Source", y = "Anzahl") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+ggplot(gtf_df, aes(x = type)) +
+  geom_bar() +
+  labs(title = "Einträge pro Feature-Typ", x = "Feature", y = "Anzahl") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+If we want to find out how many features there are on the + and - strand:
+```{r}
+table(gtf_df$strand)
+```
+```{r include=FALSE}
+strand_counts <- as.data.frame(table(gtf_df$seqnames, gtf_df$strand))
+colnames(strand_counts) <- c("chromosome", "strand", "count")
+strand_counts <- strand_counts[strand_counts$strand %in% c("+", "-"), ]
+```
+
+```{r}
+# Trennt die einträge von plus und minus für jedes chromosom
+plus  <- strand_counts[strand_counts$strand == "+", c("chromosome", "count")]
+minus <- strand_counts[strand_counts$strand == "-", c("chromosome", "count")]
+
+ratio_df <- merge(plus, minus, by = "chromosome")
+colnames(ratio_df) <- c("chromosome", "plus", "minus")
+ratio_df
+```
+We can see that the number of plus and minus strands varys a lot for each chromosom.
+```{r}
+# berechnet länge des Eintrags in Basenpaaren, plus 1 ist nötig weil GTF 1 basiert ist
+gtf_df$length <- gtf_df$end - gtf_df$start + 1
+
+# Längenverteilung pro Feature-Typ
+ggplot(gtf_df, aes(x = length, fill = type)) +# jeder feature typ belommt eigene farbe
+  geom_histogram(bins = 50) +#zeichnet histogram mit 50 balken
+  facet_wrap(~ type, scales = "free") +#erstellt seperates teildiagram für jeden feature typ, wichtig da sehr unterschiedliche längen
+  labs(title = "Längenverteilung pro Feature-Typ",
+       x = "Länge (bp)", y = "Anzahl") +# achsenbeschriftungen
+  theme(legend.position = "none")
+
+```
+How many transcripts are associated with each gene?
+```{r}
+genes       <- gtf_df[gtf_df$type == "gene", ]#filtert zeilen mit typ gene
+transcripts <- gtf_df[gtf_df$type == "transcript", ]#filtert zeilen mit typ transcript
+tx_per_gene <- as.data.frame(table(transcripts$gene_id)) # zählt wie oft jede gene id in den transkripten vorkommt
+colnames(tx_per_gene) <- c("gene_id", "n_transcripts")
+table(tx_per_gene$n_transcripts)# zählt wie viele gene 1,2,3.. transkripte haben, gibt das aus
+```
+All 7126 genes have just one transcript, which makes sense because its Yeast and there is not as much alternative splicing as in humans.
+
+```{r}
+exons <- gtf_df[gtf_df$type == "exon", ]
+
+exons_per_tx <- as.data.frame(table(exons$transcript_id))
+colnames(exons_per_tx) <- c("transcript_id", "n_exons")
+table(exons_per_tx$n_exons)
+```
+
+Most of the transcripts just have one exon, which is typical for yeast, it has not many Introns, there are a few exceptions, even one with 8 Exons.
