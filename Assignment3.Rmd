@@ -1,0 +1,159 @@
+---
+title: "Assignment3"
+output: html_document
+---
+
+### Basic Plotting in R
+
+Task 1 a)
+# One Dimensional Plotting
+First we look at the possibilities to plot in R with one dimension:
+
+Histogram
+1D, many observations, ordered, distribution
+```{r}
+# here we plot the fuel efficiency in miles per gallon for each of the 32 cars in the dataset.
+
+hist(mtcars$mpg)# mtcarsmpg is a build in dataset
+```
+Stem and leaf plot
+Shows the mpg values of the 32 cars as a text based plot where each value is split into a stem (tens digit) and a leaf (ones digit).
+1D, continous/discrete, few observations, orderd, distribution
+```{r}
+stem(mtcars$mpg)
+```
+Boxplot
+1D, continuous, many observations, orderd by quantile
+```{r}
+boxplot(mpg ~ cyl, data = mtcars)#Plots one boxplot of mpg for each cylinder group (4, 6, 8), showing median, quartiles, and outliers of fuel efficiency per engine size.
+```
+Dot plot
+1D, continuous, distribution
+```{r}
+stripchart(mtcars$mpg, method = "jitter")#Plots each car's mpg value as a single point along one axis, with jitter added so overlapping points are visible.
+```
+Barplot
+1D, comparison/composition
+```{r}
+barplot(table(mtcars$cyl))#Plots the count of cars for each cylinder category (4, 6, 8) as bars.
+```
+Pie Chart
+1D, categorical, few observations, unordered, compositions
+```{r}
+pie(table(mtcars$cyl))#Plots the share of cars in each cylinder category (4, 6, 8) as slices of a circle.
+```
+
+# Two Dimensional plotting
+
+generic scatter plot
+2D, continuous, few-many-observations
+```{r}
+plot(mtcars$wt, mtcars$mpg)#Plots each car as a point with weight on the x-axis and mpg on the y-axis to reveal how fuel efficiency relates to vehicle weight.
+```
+
+density shaded scatter
+2D, continuous, many observations, unordered, distribution/relationship
+```{r}
+smoothScatter(rnorm(5000), rnorm(5000))#Plots 5000 randomly generated (x, y) points from a normal distribution as a smoothed color density, with darker areas indicating where many points overlap.
+```
+
+Scatter with overlap markers
+```{r}
+sunflowerplot(iris$Sepal.Length, iris$Sepal.Width)#Plots iris flowers as points with sepal length vs. sepal width, drawing "petals" on any point that represents multiple identical observations
+```
+quantile quantile plots
+2D, continuous, many observations
+```{r}
+qqnorm(mtcars$mpg); qqline(mtcars$mpg)#Plots the quantiles of mpg against the theoretical quantiles of a normal distribution; the closer the points hug the reference line, the more normally distributed mpg is.
+```
+
+Multiple series on shared axes
+2D, continuous, many observations, ordered 
+```{r}
+matplot(EuStockMarkets, type = "l")#Plots the daily closing prices of four European stock indices (DAX, SMI, CAC, FTSE) as four lines on the same chart over time.
+```
+
+
+spine plot
+2D, categorical, ordered
+```{r}
+spineplot(Species ~ Sepal.Length, data = iris)#Plots how the proportions of the three iris species change across bins of sepal length, with bar widths scaled to bin frequency.
+```
+conditional density plot
+```{r}
+cdplot(Species ~ Sepal.Length, data = iris)#Plots a smoothed estimate of how the conditional probability of each iris species changes as sepal length increases
+```
+
+# Plotting in 3D
+
+heatmap of a matrix
+2D representation of 3D, continuous, many observations, ordered grid
+```{r}
+image(volcano)#Plots elevation values from the volcano dataset (Maunga Whau in Auckland) as a color-coded grid, where color indicates height.
+```
+
+contour lines
+```{r}
+contour(volcano)
+```
+
+perspective surface plot
+3D, continuous, many observations, ordered grid, relationship
+
+```{r}
+persp(volcano, theta = 30, phi = 30)#Plots the volcano elevation data as a 3D wireframe surface viewed from a rotation angle of 30° and an elevation angle of 30°.
+
+```
+# Multidimensional Plotting
+
+scatterplot matrix
+multidimensional, unordered, continuous, many observations, relationship
+```{r}
+pairs(iris[, 1:4])#Plots a grid of scatter plots showing every pairwise combination of the four numeric iris measurements (sepal length, sepal width, petal length, petal width).
+```
+
+
+conditioning plot
+multi dimensional, continuous, orderd conditioning
+```{r}
+coplot(mpg ~ wt | cyl, data = mtcars)#Plots mpg against weight as separate scatter panels, one for each cylinder group, to see if the weight-vs-mpg relationship differs by engine size.
+```
+
+mosaic plot for contingency tables
+multi dimensional, categorical, many observations, unordered, composition/relationship
+```{r}
+mosaicplot(HairEyeColor)#Plots the joint distribution of hair color, eye color, and sex as nested rectangles whose areas are proportional to the cell frequencies in the contingency table.
+```
+
+# Task 1 b
+We can write the labels for the x and y axis in the function.
+The key words are xlab and ylab.
+```{r}
+plot(mtcars$wt, mtcars$mpg,
+     xlab = "Weight (1000 lbs)",
+     ylab = "Fuel efficiency (miles per gallon)")
+```
+We can use a log transformation by saying so in the function head:
+```{r}
+plot(mtcars$wt, log(mtcars$mpg),
+     xlab = "Weight (1000 lbs)",
+     ylab = "log(Fuel efficiency [mpg])")
+```
+
+Or we tell the function which axis should get log transformed:
+```{r}
+plot(mtcars$wt, mtcars$mpg, log = "y",
+     xlab = "Weight (1000 lbs)",
+     ylab = "Fuel efficiency (mpg, log scale)")
+```
+cex ("character expansion") scales text and points. 1 = default, 1.5 = 50 % larger, 0.8 = smaller.
+```{r}
+plot(mtcars$wt, mtcars$mpg,
+     main = "Fuel efficiency vs. weight",
+     xlab = "Weight (1000 lbs)", ylab = "MPG",
+     cex      = 1.3,   # point size
+     cex.main = 1.5,   # title size
+     cex.lab  = 1.2,   # axis label size
+     cex.axis = 0.9)   # tick number size
+```
+
