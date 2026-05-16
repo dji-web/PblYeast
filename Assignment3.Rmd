@@ -170,8 +170,10 @@ genes_sds <- apply(log_counts, 1, sd)
 
 plot(genes_mean, genes_sds, main = "Gene Expression: Mean vs. Standar Deviation", xlab = "Mean Log2 Expression", ylab = "Standard Deviation", col = rgb(0,0,0,0.3), las = 1)
 ```
+
 The scatter plot maps the global relationship between the average expression level of each gene and its standard deviation (variability) across all samples of the yeast heatshock experiment. The data reveals a high variability at an intermediate expression level, stabalizing at low and high Expression levels. the outlying points represent volatile genes with exceptionally high standard deviation, which undergo a condition specific regulatory shift. 
 The graphic shows thas the log-transformation worked across the entire dataset.
+
 
 ```{r}
 yfl_data <- as.numeric(log_counts["YFL014W", ])
@@ -181,6 +183,7 @@ axis(1, at = c(1, 2, 3), labels = c("0 min", "10 min", "30 min")) # adding condi
 ```
 
 This scatter plot displays the raw expression values of the gene YFL014W across all nine replicates, grouped by their condition. Visualizing the individual data points confirms that the biological replicates within each condition cluster tightly together, indicating high reproducibility and low technical noise in the dataset. A upward shift in log2 expression counts is visible as the temperature rises and the time progresses, resulting in higher expression rate for this gene.
+
 
 ```{r}
 yfl_mean_0min <- mean(yfl_data[1:3])
@@ -193,6 +196,7 @@ axis(1, at = c(1, 2, 3), labels = c("0 min", "10 min", "30 min"))
 ```
 
 By plotting the condition averages of this gene, this line plot puts the raw replicate data into a clean directional trajectory. The upward slope of the connecting line demonstrates a increase in mean log2 expression over the heat shock experiment. This visual representation focuses the attention on the overall trend rather than between sample variance, making it immediately that YFL014W ist strongly upregulated in response to thermal stress. 
+
 
 ```{r}
 # Calculate the mean Expression for every gene
@@ -226,6 +230,7 @@ abline(a = 0, b = 1, col = "black", lwd = 1.5)
 legend("topleft", legend = c("Always Increasing", "Always Decreasing", "Other"), col = c(rgb(0.1, 0.5, 0.5, 0.6), rgb(0.9, 0.2, 0.2, 0.6), rgb(0.7, 0.7, 0.7, 0.4)), pch = 16, bty = "n")
 
 ```
+
 The first plot compares the global mean expression of the genes between the control group (0 min) and the initial heat shock phase (10 min). The vast majority of genes cluster along the diagonal line, indicating that a significant portion of the transcriptome remains stable during the early stress response. The filtering successfully highlights a distinct subset of highly dynamic genes: the blue dots lying above the line represent transcripts that undergo rapid up-regulation, while the red dots below the line represent immediate down-regulation. The enhanced density of the grey background points ensures that the global distribution remains clearly visible while allowing these responding genes to stand out.
 
 The second plot captures the subsequent transition of global gene expression between the 10-minute and 30-minute heat shock intervals. In contrast to the previous time step, the highlighted "Always Increasing" (blue) genes continue to maintain their position strictly above the diagonal line, proving that their expression continuously accumulates over the entire duration of the experiment. The "Always Decreasing" (red) genes remain below the diagonal, demonstrating an ongoing, progressive suppression. This visualization confirms that the identified gene subsets are not experiencing a temporary fluctuation, but are instead part of a sustained, coordinated transcriptional program to adapt to prolonged thermal stress.
