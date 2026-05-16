@@ -157,3 +157,79 @@ plot(mtcars$wt, mtcars$mpg,
      cex.axis = 0.9)   # tick number size
 ```
 
+
+# Task 2
+
+```{r}
+raw_counts <- read.csv("basic_yeast_heatshock.csv", row.names = 1) # row.names = 1 moves 'gene_id' into the row labels position -> easy searching later on and no math Errors
+log_counts <- log2(raw_counts + 1) # pseudocount for log-transformation
+
+# Mean and standard deviation over all 9 replicates
+genes_mean <- rowMeans(log_counts)
+genes_sds <- apply(log_counts, 1, sd)
+
+plot(genes_mean, genes_sds, main = "Gene Expression: Mean vs. Standar Deviation", xlab = "Mean Log2 Expression", ylab = "Standard Deviation", col = rgb(0,0,0,0.3), las = 1)
+```
+The scatter plot maps the global relationship between the average expression level of each gene and its standard deviation (variability) across all samples of the yeast heatshock experiment. The data reveals a high variability at an intermediate expression level, stabalizing at low and high Expression levels. the outlying points represent volatile genes with exceptionally high standard deviation, which undergo a condition specific regulatory shift. 
+The graphic shows thas the log-transformation worked across the entire dataset.
+
+```{r}
+yfl_data <- as.numeric(log_counts["YFL014W", ])
+x_positions <- c(1, 1, 1, 2, 2, 2, 3, 3, 3) # assign positions to the replicates
+plot(x_positions, yfl_data, main = "Expression of YFL014W across all Replicates", xlab = "Condition", ylab = "Log2 Expression Count", col = "orchid", pch = 19, xaxt = "n", las = 1)
+axis(1, at = c(1, 2, 3), labels = c("0 min", "10 min", "30 min")) # adding condition labels and positions
+```
+
+This scatter plot displays the raw expression values of the gene YFL014W across all nine replicates, grouped by their condition. Visualizing the individual data points confirms that the biological replicates within each condition cluster tightly together, indicating high reproducibility and low technical noise in the dataset. A upward shift in log2 expression counts is visible as the temperature rises and the time progresses, resulting in higher expression rate for this gene.
+
+```{r}
+yfl_mean_0min <- mean(yfl_data[1:3])
+yfl_mean_10min <- mean(yfl_data[4:6])
+yfl_mean_30min <- mean(yfl_data[7:9])
+yfl_means <- c(yfl_mean_0min, yfl_mean_10min, yfl_mean_30min)
+
+plot(c(1, 2, 3), yfl_means, type = "b", main = "Mean Expression of YFL014W per Condition", xlab = "Condition", ylab = "Mean Log2 Expression Count", col = "orchid", pch = 19, lwd = 2, xaxt = "n", las = 1)
+axis(1, at = c(1, 2, 3), labels = c("0 min", "10 min", "30 min"))
+```
+
+By plotting the condition averages of this gene, this line plot puts the raw replicate data into a clean directional trajectory. The upward slope of the connecting line demonstrates a increase in mean log2 expression over the heat shock experiment. This visual representation focuses the attention on the overall trend rather than between sample variance, making it immediately that YFL014W ist strongly upregulated in response to thermal stress. 
+
+```{r}
+# Calculate the mean Expression for every gene
+mean_0min <- rowMeans(log_counts[, 1:3])
+mean_10min <- rowMeans(log_counts[, 4:6])
+mean_30min <- rowMeans(log_counts[, 7:9])
+
+# Identify the genes always increasing or decreasing
+always_increasing <- (mean_0min < mean_10min) & (mean_10min < mean_30min)
+always_decreasing <- (mean_0min > mean_10min) & (mean_10min > mean_30min)
+
+# Create a list of the gene names
+genes_always_increasing <- rownames(log_counts)[always_increasing]
+genes_always_decreasing <- rownames(log_counts)[always_decreasing]
+
+# Custom color vector for these genes
+gene_colors <- rep(rgb(0.7, 0.7, 0.7, 0.2), nrow(log_counts))
+gene_colors[always_increasing] <- rgb(0.1, 0.5, 0.8, 0.6)
+gene_colors[always_decreasing] <- rgb(0.9, 0.2, 0.2, 0.6)
+
+
+# Plot1: 0min vs. 10min
+plot(mean_0min, mean_10min, main = "Gene Expression Mean: 0 min vs. 10 min", xlab = "Mean Log2 Expression (0 min)", ylab = "Mean Log2 Expression (10 min)", col = gene_colors, pch = 16, las = 1)
+abline(a = 0, b = 1, col = "black", lwd = 1.5)
+legend("topleft", legend = c("Always Increasing", "Always Decreasing", "Other"), col = c(rgb(0.1, 0.5, 0.5, 0.6), rgb(0.9, 0.2, 0.2, 0.6), rgb(0.7, 0.7, 0.7, 0.4)), pch = 16, bty = "n")
+
+
+#Plot2: 10 min vs. 30min
+plot(mean_10min, mean_30min, main = "Gene Expression Mean: 10 min vs. 30 min", xlab = "Mean Log2 Expression (10 min)", ylab = "Mean Log2 Expression (30 min)", col = gene_colors, pch = 16, las = 1)
+abline(a = 0, b = 1, col = "black", lwd = 1.5)
+legend("topleft", legend = c("Always Increasing", "Always Decreasing", "Other"), col = c(rgb(0.1, 0.5, 0.5, 0.6), rgb(0.9, 0.2, 0.2, 0.6), rgb(0.7, 0.7, 0.7, 0.4)), pch = 16, bty = "n")
+
+```
+The first plot compares the global mean expression of the genes between the control group (0 min) and the initial heat shock phase (10 min). The vast majority of genes cluster along the diagonal line, indicating that a significant portion of the transcriptome remains stable during the early stress response. The filtering successfully highlights a distinct subset of highly dynamic genes: the blue dots lying above the line represent transcripts that undergo rapid up-regulation, while the red dots below the line represent immediate down-regulation. The enhanced density of the grey background points ensures that the global distribution remains clearly visible while allowing these responding genes to stand out.
+
+The second plot captures the subsequent transition of global gene expression between the 10-minute and 30-minute heat shock intervals. In contrast to the previous time step, the highlighted "Always Increasing" (blue) genes continue to maintain their position strictly above the diagonal line, proving that their expression continuously accumulates over the entire duration of the experiment. The "Always Decreasing" (red) genes remain below the diagonal, demonstrating an ongoing, progressive suppression. This visualization confirms that the identified gene subsets are not experiencing a temporary fluctuation, but are instead part of a sustained, coordinated transcriptional program to adapt to prolonged thermal stress.
+
+
+
+
