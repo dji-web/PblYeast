@@ -305,27 +305,6 @@ The histogram displays the distribution of the relative positions of the conserv
 There is a positional bias towards the End, represented by a massive skewed distribution with a peak at 0.8 and 0.9. This indicates that the Branch point is positioned clos to the end of the intron.
 The branch point needs to be near the 3' splice site for the second step of splicing. The remaining distance to the end allows the RNA so physically bend and anchor into the required lasso structure
 
-### Optional Task
-```{r}
-library(GenomicFeatures)
-library(Biostrings)
-transcript_database <- makeTxDbfromGFF("annotation.ftf", format = "gtf")
-
-introns_by_tx <- introntByTranscript(transcript_database, use.names = TRUE)
-
-introns_counts <- elementNRWOS(introns_by_tx)
-complex_transcripts <- introns_by_tx[introns_counts >= 2]
-
-complex_introns_gr <- unlist(complex_transcripts)
-
-genome <- readDNAStringSet("genome.fa")
-
-complex_intron_sequences <- getSeq(genome, complex_introns_gr)
-
-print(complex_intron_sequences)
-```
-
-
 
 
 
