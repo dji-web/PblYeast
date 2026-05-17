@@ -236,5 +236,102 @@ The first plot compares the global mean expression of the genes between the cont
 The second plot captures the subsequent transition of global gene expression between the 10-minute and 30-minute heat shock intervals. In contrast to the previous time step, the highlighted "Always Increasing" (blue) genes continue to maintain their position strictly above the diagonal line, proving that their expression continuously accumulates over the entire duration of the experiment. The "Always Decreasing" (red) genes remain below the diagonal, demonstrating an ongoing, progressive suppression. This visualization confirms that the identified gene subsets are not experiencing a temporary fluctuation, but are instead part of a sustained, coordinated transcriptional program to adapt to prolonged thermal stress.
 
 
+# Task 3
+
+```{r}
+intron_data <- read.delim("data/AresLab_yeast_introns_2011.tsv", header = FALSE, stringsAsFactors = FALSE)
+head(intron_data)
+all_sequences <- paste(toupper(intron_data$V6), collapse = "") # vector with all the bases in Uppercases
+single_cases <- strsplit(all_sequences, "") [[1]]
+base_counts <- table(single_cases) # counts everything and saves it
+base_counts <- base_counts[c("A", "T", "G", "C")] # filter for the four bases
+
+# Creating the barplot:
+barplot(base_counts/ 1000, main = "Nucleotide Composition of Yeast Introns", xlab = "Nucleotide", ylab = "Frequency of Nucleotides (in tsd)", col = "grey", border = NA, las = 1, axes = TRUE)
+
+```
+
+The introns of Yeast consist of way more A-T bonds than G-C bonds (double amount). This reason could be more flexible bending and folding into the required shape for splicing, saving energy for the spliceosome.
+
+```{r}
+# Extracting the first an last bases (interesting for the spliceosome)
+first_10 <- substr(intron_data$V6, start = 1, stop = 10)
+lengths <- nchar(intron_data$V6)
+last_10 <- substr(intron_data$V6, start = lengths - 9, stop = lengths)
+
+# first Installing the Biopacker package
+# install.packages("BiocManager")
+# BiocManager::install(c("Biostrings", "seqLogo"))
+
+library(Biostrings)
+matrix_first_10 <- consensusMatrix(DNAStringSet(first_10)) # create a Matrix for the first 10 bases
+matrix_last_10 <- consensusMatrix(DNAStringSet(last_10)) # create a Matrix for the last 10 bases
+
+# filter unknown letters and gaps
+pwm_first <- matrix_first_10[c("A", "C", "G", "T"), ] 
+pwm_last <- matrix_last_10[c("A", "C", "G", "T"), ]
+
+library(seqLogo)
+
+# convert the raw count into proportions (margin = 2 > spply the calculation down each column)
+pwm_first_prop <- prop.table(pwm_first, margin = 2)
+pwm_last_prop  <- prop.table(pwm_last, margin = 2)
+
+# turning frequencies into probabilities for Position Weight Matrix
+pwm_first_final <- makePWM(pwm_first_prop)
+pwm_last_final <- makePWM(pwm_last_prop)
+
+
+# plot the seqLogo
+seqLogo(pwm_first_final)
+seqLogo(pwm_last_final)
+```
+
+There is a highly conserved GTATGT motif at positions 1 to 6. The absolute height of G (position 1), T (position 2) and A (positon 3) indicates that almost every yeast intron begins with these two nucleotides, and may act as a recognition signal for the spliceosome to initiate splicing
+
+The conserved mofit of A & G (two final positions before the next exon) represent the place where the splicing machine cuts of.
+
+```{r}
+# Find the starting position of 'TACTAAC' in every intron
+bp_start <- regexpr("TACTAAC", intron_data$V6) # regexpr() tells the starting position of the search term (-1 if not found)
+lengths <- nchar(intron_data$V6) 
+found_start <- which(bp_start != -1) # filter those rows with 'TACTAAC'
+relative_positions <- bp_start[found_start] / lengths[found_start] # different intron lengths, relative position tells more about architecture of the intronand makes them comparable
+hist(relative_positions, main = "Relatibe Position of the 'TACTAAC' Branch Point", xlab = "Relative Position (0 = Start, 1 = End", ylab = "Frequency", col = "skyblue", border = "white", las = 1, xlim = c(0, 1))
+```
+
+The histogram displays the distribution of the relative positions of the conserved 'TACTAAC' branch point sequence within yeast introns, scaled from 0 (5' splice start) to 1 (3' splice end)
+
+There is a positional bias towards the End, represented by a massive skewed distribution with a peak at 0.8 and 0.9. This indicates that the Branch point is positioned clos to the end of the intron.
+The branch point needs to be near the 3' splice site for the second step of splicing. The remaining distance to the end allows the RNA so physically bend and anchor into the required lasso structure
+
+### Optional Task
+```{r}
+library(GenomicFeatures)
+library(Biostrings)
+transcript_database <- makeTxDbfromGFF("annotation.ftf", format = "gtf")
+
+introns_by_tx <- introntByTranscript(transcript_database, use.names = TRUE)
+
+introns_counts <- elementNRWOS(introns_by_tx)
+complex_transcripts <- introns_by_tx[introns_counts >= 2]
+
+complex_introns_gr <- unlist(complex_transcripts)
+
+genome <- readDNAStringSet("genome.fa")
+
+complex_intron_sequences <- getSeq(genome, complex_introns_gr)
+
+print(complex_intron_sequences)
+```
+
+
+
+
+
+
+
+
+
 
 
