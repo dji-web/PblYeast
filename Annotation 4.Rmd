@@ -1,0 +1,72 @@
+---
+title: "Assignment 4"
+output: html_document
+date: "2026-05-18"
+---
+
+### Task One
+Sequencing technologies introduce technical variability. Therefore, raw transcriptomic data mus be adjusted to account for these technical factors before researchers can sompare gene expression within or between samples.
+Three stages of Normalization:
+
+*Within sample:*
+Reguired to compare the expression of genes within an individual sample. Adjusting for the transcript length and sequencing depth
+Longer genes have more mapped reads at the same expression level and number of sequencing reads per sample may vary
+
+*Between samples:*
+to adjust for technical variations like sequencing depth
+if the transcript population changes, it affects the relative levels of transcripts/ expression of a gene, even if the absolut expression of this gene stays the same
+
+*Across dataset:*
+to correct batch effects between datasets
+
+**CPM (Counts per million):**
+Number of raw reads mapped to a transcript, scaled by the number of sequencing reads in the sample (divided by the total number of reads in a sample), multiplied by a million.
+Normalizes for sequencing depth but not for gene length
+unsuitable for within sample comparison
+between sample comparison can be made, but only within a dataset
+--> useful to compare how many reads a gene got relative to the total number of reads in that sample
+
+Tools that use CPM:
+edgeR
+limma-voom
+Single-cell QC tools (Scater)
+can be used in DESeq2 for QC and visualization
+
+### Task Two
+
+```{r}
+counts_df <- read.csv("basic_yeast_heatshock.csv", header = TRUE, stringsAsFactors = FALSE)
+gtf <- read.table("annotation.gtf", sep = "\t", header = FALSE, comment.char = "#", stringsAsFactors = FALSE)
+head(gtf)
+genes_gtf <- gtf[gtf$V3 == "gene", ]
+genes_length <- genes_gtf$V5 - genes_gtf$V4 + 1
+
+gene_id_part <- sapply(strsplit(genes_gtf$V9, ";"), `[`, 1)
+genes_id <- gsub("gene_id ", "", gene_id_part)
+head(genes_id)
+
+lengths_table <- data.frame(
+  gene_id = genes_id,
+  length = genes_length,
+  stringsAsFactors = FALSE
+)
+
+counts_with_length <- merge(counts_df, lengths_table, by = "gene_id")
+
+count_matrix <- as.matrix(counts_with_length[, 2:10])
+rownames(count_matrix) <- counts_with_length$gene_id
+genes_length <- counts_with_length$length
+
+library_sizes <- colSums(count_matrix)
+
+cpm_matrix <- t(t(count_matrix) / library_sizes) * 1000000
+
+rpkm_matrix <- count_matrix * 10^9
+for(i in 1:ncol(rpkm_matrix)){
+  rpkm_matrix[, i] <- rpkm_matrix[, i] / (genes_length * library_sizes[i])
+}
+
+head(cpm_matrix)
+head(rpkm_matrix)
+
+```
