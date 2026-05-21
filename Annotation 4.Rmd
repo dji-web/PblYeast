@@ -38,26 +38,28 @@ can be used in DESeq2 for QC and visualization
 counts_df <- read.csv("basic_yeast_heatshock.csv", header = TRUE, stringsAsFactors = FALSE)
 gtf <- read.table("annotation.gtf", sep = "\t", header = FALSE, comment.char = "#", stringsAsFactors = FALSE)
 head(gtf)
-genes_gtf <- gtf[gtf$V3 == "gene", ]
-genes_length <- genes_gtf$V5 - genes_gtf$V4 + 1
+genes_gtf <- gtf[gtf$V3 == "gene", ] # filtert alle Spalten mit "gene" und behält alle Spalten davon
+genes_length <- genes_gtf$V5 - genes_gtf$V4 + 1 # berechnet die Länge des genoms
 
-gene_id_part <- sapply(strsplit(genes_gtf$V9, ";"), `[`, 1)
-genes_id <- gsub("gene_id ", "", gene_id_part)
+gene_id_part <- sapply(strsplit(genes_gtf$V9, ";"), `[`, 1) # gene_id + ID filtern
+genes_id <- gsub("gene_id ", "", gene_id_part) # genes_id durch nichts ersetzen --> nur die ID übrig lassen (wie in csv datei)
 head(genes_id)
 
 lengths_table <- data.frame(
   gene_id = genes_id,
   length = genes_length,
   stringsAsFactors = FALSE
-)
+) # table with id and gene length
+head(lengths_table)
 
-counts_with_length <- merge(counts_df, lengths_table, by = "gene_id")
+counts_with_length <- merge(counts_df, lengths_table, by = "gene_id") # merging both tables with at the key word -> one big table with the counts per condition and the genelength
+head(counts_with_length)
 
-count_matrix <- as.matrix(counts_with_length[, 2:10])
+count_matrix <- as.matrix(counts_with_length[, 2:10]) # matrix for easier calculations
 rownames(count_matrix) <- counts_with_length$gene_id
 genes_length <- counts_with_length$length
 
-library_sizes <- colSums(count_matrix)
+library_sizes <- colSums(count_matrix) 
 
 cpm_matrix <- t(t(count_matrix) / library_sizes) * 1000000
 
@@ -70,3 +72,282 @@ head(cpm_matrix)
 head(rpkm_matrix)
 
 ```
+
+### Task Three
+```{r - (a)}
+par(mfrow = c(1,3))
+
+barplot(colSums(count_matrix),
+        col = "skyblue",
+        main = "Raw Count: Library Size",
+        ylab = "Total Reads",
+        las = 2)
+
+barplot(colSums(cpm_matrix),
+        col = "lightgreen",
+        main = "CPM: Library Size",
+        ylab = "Total CPM Sum",
+        las = 2, 
+        ylim = c(0, 1100000)) # adjusting the scale for better visualization
+
+barplot(colSums(rpkm_matrix),
+        col = "salmon",
+        main = "RPKM: Library Size",
+        ylab = "Total RPKM Sum",
+        las = 2)
+
+```
+
+*Raw Counts:* the plot shows the total number of sequenced reads per condition. It reveals technical variance (= batch effects) with varying sequencing depths throughout the different samples under the same condition.
+
+*CPM:* The normalization scales the sum to exactly 1 000 000. The technical variance is eliminated, the samples are on the same scale
+
+*RPKM:* The columns are not the same height caused by the division of the individual genen by its length. The variation represents the biological differences in gene length expression
+
+```{r (b)}
+par(mfrow = c(1,3))
+
+hist(log2(count_matrix[, "X25_0_r1"] + 1),
+     breaks = 50,
+     col = "skyblue",
+     border = "white",
+     main = "Raw Counts (X25_0_r1)",
+     xlab = "log2(Counts + 1)",
+     ylab = "Amount of genes",
+     ylim = c(0,1500),
+     yaxt = "n")
+axis(side =2, at = seq(0, 1500, by = 250))
+
+hist(log2(cpm_matrix[, "X25_0_r1"] + 1),
+     breaks = 50,
+     col = "lightgreen",
+     border = "white",
+     main = "CPM Normalized (X25_0_r1)",
+     xlab = "log2(CPM + 1)",
+     ylab = "Amount of genes",
+     ylim = c(0,1500),
+     yaxt = "n")
+axis(side =2, at = seq(0, 1500, by = 250))
+
+hist(log2(rpkm_matrix[, "X25_0_r1"] + 1),
+     breaks = 50,
+     col = "salmon",
+     border = "white",
+     main = "RPKM Normalized (X25_0_r1)",
+     xlab = "log2(RPKM + 1)",
+     ylab = "Amount of genes",
+     ylim = c(0,1500),
+     yaxt = "n")
+axis(side =2, at = seq(0, 1500, by = 250))
+```
+
+**General observation:**
+There is a sharp peak at 0. Representing many genes that are not expressed or seem to have lo counts. The rest looks like a normal distribution where most of the genes are.
+
+*Raw Counts:* The active gene population centers around a peak of approximately 8 to 9 on the log2 scale.
+
+*CPM:* The overall shape of the distribution is completely identical to the raw counts, but the active gene population has shifted to the left, centering around a peak of approximately 6. This happens because SPM downscales the raw counts of this sample to a standardized baseline (1 Mil. reads).
+
+*RPKM:* The broad hill shifts further to the left with a peak around 5, the shape remains more or less the same with a slight modification to lower expression. This happens due to the individual correction factor for every single gene based on its length in kilobases, some longer genes shifting to the left.
+
+```{r - (c)}
+
+test1_raw <- count_matrix[, "X25_0_r3"];
+test2_raw <- count_matrix[, "X42_10_r2"];
+
+test1_cpm <- cpm_matrix[, "X25_0_r3"];
+test2_cpm <- cpm_matrix[, "X42_10_r2"];
+
+test1_rpkm <- rpkm_matrix[, "X25_0_r3"];
+test2_rpkm <- rpkm_matrix[, "X42_10_r2"];
+
+par(mfrow = c(1,3))
+
+plot(log2(test2_raw + 1), log2(test1_raw + 1),
+     col = rgb(0, 0, 0.5, 0.2),
+     main = "Raw counts comparison",
+     xlab = "log2(X42_10_r2 + 1)",
+     ylab = "log2(X25_0_r3 + 1)")
+abline(a = 0, b = 1, col = "red", lwd = 1.5)
+
+cor_p_raw <- cor(log2(test2_raw + 1), log2(test1_raw + 1), method = "pearson")
+cor_s_raw <- cor(log2(test2_raw + 1), log2(test1_raw + 1), method = "spearman")
+
+text(x = 0.5, y = max(log2(test1_raw + 1)) * 0.98, 
+     labels = paste0("Pearson r: ", round(cor_p_raw, 2), 
+                     "\nSpearman rs: ", round(cor_s_raw, 2)), 
+     adj = c(0, 1), col = "darkred", font = 2)
+
+plot(log2(test2_cpm + 1), log2(test1_cpm + 1), 
+     col = rgb(0, 0, 0.5, 0.2),
+     main = "CPM comparison",
+     xlab = "log2(X42_10_r2 + 1)",
+     ylab = "log2(X25_0_r3 + 1)")
+abline(a = 0, b = 1, col = "red", lwd = 1.5)
+
+cor_p_cpm <- cor(log2(test2_cpm + 1), log2(test1_cpm + 1), method = "pearson")
+cor_s_cpm <- cor(log2(test2_cpm + 1), log2(test1_cpm + 1), method = "spearman")
+
+text(x = 0.5, y = max(log2(test1_cpm + 1)) * 0.98, 
+     labels = paste0("Pearson r:", round(cor_p_cpm, 2),
+                    "\nSpearman rs:", round(cor_s_cpm, 2)),
+     adj = c(0,1), col = "darkred", font = 2)
+
+plot(log2(test2_rpkm + 1), log2(test1_rpkm + 1), 
+     col = rgb(0, 0, 0.5, 0.2),
+     main = "RPKM comparison",
+     xlab = "log2(X42_10_r2 + 1",
+     ylab = "log2(X25_0_r3 + 1")
+abline(a = 0, b = 1, col = "red", lwd = 1.5)
+
+cor_p_rpkm <- cor(log2(test2_rpkm + 1), log2(test1_rpkm + 1), method = "pearson")
+cor_s_rpkm <- cor(log2(test2_rpkm + 1), log2(test1_rpkm + 1), method = "spearman")
+
+text(x = 0.5, y = max(log2(test1_rpkm + 1)) * 0.98,
+     labels = paste0("Pearson r:", round(cor_p_rpkm, 2),
+                     "\nSpearman rs:", round(cor_s_rpkm, 2)),
+     adj = c(0,1), col = "darkred", font = 2)
+```
+
+*Raw Counts:* Almost all points are above the diagonal. This shows – in comparison to the other scatterplots – the impact of technical artifacts. Statistically, the strong correlation (Pearson r = 0.89, Spearman rs = 0.86) reflects that the global expression profiles are highly similar, but the technical shift (asymmetry around the diagonal) is caused by the differing sequencing depths.
+
+*CPM:* The data cloud is now centered around the diagonal line. This proves the success of the library size normalization, which was highly necessary because the raw counts of sample X25_0_r3 showed roughly double the sequencing reads compared to X42_10_r2. The correlation coefficients remain very high (r = 0.86, rs = 0.86), demonstrating that adjusting for library size centers the data without losing or distorting the underlying monotonic and linear relationships between the replicates.
+
+*RPKM:* This plot incorporates an additional correction for gene length. The diagonal trend line remains consistent with the CPM plot, but individual gene positions shift vertically depending on their transcript length. The remaining outliers scattered away from the main diagonal cloud represent biologically meaningful differences, capturing the activation of the yeast's heat-shock response and adaptation machinery. Interestingly, the correlation slightly drops here (r = 0.83, rs = 0.82). This marginal decrease is expected because RPKM penalizes longer transcripts, thereby removing artificial inflation and revealing the true biological variance, including specific outliers that respond to the heat shock.
+
+```{r - (d)}
+selected_gene <- 465
+gene_name <- rownames(count_matrix)[selected_gene]
+
+gene_raw <- count_matrix[selected_gene, ]
+gene_cpm <- cpm_matrix[selected_gene, ]
+gene_rpkm <- rpkm_matrix[selected_gene, ]
+
+par(mfrow = c(1,3))
+
+plot(library_sizes, gene_raw,
+     col = "skyblue",
+     main = paste("Raw Counts:", gene_name),
+     xlab = "Library Size (Total Reads)",
+     ylab = "Raw Counts",
+     cex = 1.5,
+     pch = 19)
+abline(lm(gene_raw ~ library_sizes), col = "red", lwd = 1.5, lty = 2)
+
+cor_p_d1 <- cor(library_sizes, gene_raw, method = "pearson")
+cor_s_d1 <- cor(library_sizes, gene_raw, method = "spearman")
+
+text(x = 4200000, y = max(gene_raw) * 0.98, 
+     labels = paste0("Pearson r: ", round(cor_p_d1, 2), 
+                     "\nSpearman rs: ", round(cor_s_d1, 2)), 
+     adj = c(0, 1), col = "darkred", font = 2)
+
+plot(library_sizes, gene_cpm,
+     col = "lightgreen",
+     main = paste("CPM Counts:", gene_name),
+     xlab = "library Size (Total Reads)",
+     ylab = "CPM Values",
+     cex = 1.5,
+     pch = 19)
+abline(lm(gene_cpm ~ library_sizes), col = "red", lwd = 1.5, lty = 2)
+
+cor_p_d2 <- cor(library_sizes, gene_cpm, method = "pearson")
+cor_s_d2 <- cor(library_sizes, gene_cpm, method = "spearman")
+
+text(x = 4200000, y = max(gene_cpm) * 0.98,
+     labels = paste0("Pearson r:", round(cor_p_d2, 2),
+                    "\nSpearman rs:", round(cor_s_d2, 2)),
+     adj = c(0, 1), col = "darkred", font = 2)
+
+plot(library_sizes, gene_rpkm, 
+     col = "salmon",
+     main = paste("RPKM Counts:" , gene_name), 
+     xlab = "Library Size (Total Reads)",
+     ylab = "RPKM Values",
+     cex = 1.5,
+     pch = 19)
+abline(lm(gene_rpkm ~ library_sizes), col = "red", lwd = 1.5, lty = 2)
+
+cor_p_d3 <- cor(library_sizes, gene_rpkm, method = "pearson")
+cor_s_d3 <- cor(library_sizes, gene_rpkm, method = "spearman")
+
+text(x = 4200000, y = max(gene_rpkm) * 0.98,
+     labels = paste0("Pearson r:", round(cor_p_d3, 2),
+                    "\nSpearman rs:", round(cor_s_d3, 2)),
+     adj = c(0, 1), col = "darkred", font = 2)
+
+```
+
+The general purpose of this plot is to evaluate the dependency of gene expression values on the technical sequencing depth (library size) at a single-feature level. By comparing Raw Counts to CPM and RPKM, it visualizes whether the normalization successfully eliminates technical scaling artifacts. In an ideal control scenario, a flat regression line in CPM/RPKM proves that the library size effect was removed, leaving any remaining variance to be driven solely by true biological differences or replicate noise. 
+While the trendline for YAL022C suggests a positive correlation between library size and expression, a closer look at the individual sample distribution reveals that this trend is heavily driven by two leverage points: the over-sequenced control sample X25_0_r3 on the far right and the under-sequenced heat sample X42_10_r2 on the far left. The remaining samples in the center show high variance, indicating that this specific gene might not be strongly differentially expressed under heat stress, but rather subject to stochastic noise and replicate variation.
+This visual interpretation is explicitly supported by the correlation metrics: > * In the Raw Counts plot, we observe a clear positive linear relationship (Pearson r = 0.58, Spearman rs = 0.48), which reflects the uncorrected technical influence of sequencing depth on this gene.
+
+Upon CPM and RPKM normalization, the metrics shift significantly (Pearson r = 0.22, Spearman rs = -0.17). The drop in the Pearson coefficient shows that adjusting for library size breaks down the artificial linear dependency. More importantly, the Spearman rank correlation flips to a slight negative value (-0.17). This mathematically confirms that the overall monotonic trend has been broken and that the seemingly positive regression line is an artifact purely sustained by the two extreme leverage samples at the boundaries.
+
+```{r - (e)}
+
+selected_sample <- 7
+sample_name <- colnames(count_matrix)[selected_sample]
+
+sample_raw <- count_matrix[, selected_sample]
+sample_cpm <- cpm_matrix[, selected_sample]
+sample_rpkm <- rpkm_matrix[, selected_sample]
+
+par(mfrow = c(1,3))
+
+plot(genes_length, sample_raw,
+     col = rgb(135/255, 206/255, 235/255, 0.3),
+     pch = 16,
+     main = paste("Raw Counts:", sample_name),
+     xlab = "Feature length (bp)",
+     ylab = "Raw Counts",
+     log = "xy")
+abline(lm(log10(sample_raw + 1) ~ log10(genes_length)), col = "red", lwd = 1.5, lty = 2)
+
+cor_p_e1 <- cor(genes_length, sample_raw, method = "pearson")
+cor_s_e1 <- cor(genes_length, sample_raw, method = "spearman")
+
+text(x = 55, y = max(sample_raw) * 0.98, 
+     labels = paste0("Pearson r: ", round(cor_p_e1, 2), 
+                     "\nSpearman rs: ", round(cor_s_e1, 2)), 
+     adj = c(0, 1), col = "darkred", font = 2)
+
+plot(genes_length, sample_cpm,
+     col = rgb(144/255, 238/255, 144/255, 0.3),
+     pch = 16,
+     main = paste("CPM:", sample_name),
+     xlab = "Feature length (bp)",
+     ylab = "CPM Counts",
+     log = "xy")
+abline(lm(log10(sample_cpm + 1) ~ log10(genes_length)), col = "red", lwd = 1.5, lty = 2)
+
+cor_p_e2 <- cor(genes_length, sample_cpm, method = "pearson")
+cor_s_e2 <- cor(genes_length, sample_cpm, method = "spearman")
+
+text(x = 55, y = max(sample_cpm) * 0.98, 
+     labels = paste0("Pearson r: ", round(cor_p_e2, 2), 
+                     "\nSpearman rs: ", round(cor_s_e2, 2)), 
+     adj = c(0, 1), col = "darkred", font = 2)
+
+plot(genes_length, sample_rpkm,
+     col = rgb(250/255, 128/255, 114/255, 0.3),
+     pch = 16,
+     main = paste("RPKM:", sample_name),
+     xlab = "Feature length (bp)",
+     ylab = "RPKM Values",
+     log = "xy")
+abline(lm(log10(sample_rpkm + 1) ~ log10(genes_length)), col = "red", lwd = 1.5, lty = 2)
+
+cor_p_e3 <- cor(genes_length, sample_rpkm, method = "pearson")
+cor_s_e3 <- cor(genes_length, sample_rpkm, method = "spearman")
+
+text(x = 55, y = max(sample_rpkm) * 0.98, 
+     labels = paste0("Pearson r: ", round(cor_p_e3, 2), 
+                     "\nSpearman rs: ", round(cor_s_e3, 2)), 
+     adj = c(0, 1), col = "darkred", font = 2)
+
+```
+
+*Raw Counts & CPM:* Both plots exhibit a strong positive correlation between feature length and expression levels. This directly visualizes the technical length bias in RNA-seq data: longer genes mechanically accumulate more reads during sequencing. Since CPM only normalizes for library size, it completely fails to remove this length-dependent artifact.The drastic discrepancy between the correlation metrics explicitly highlights this issue: While the Pearson correlation coefficient is virtually zero (Pearson r = 0.02), suggesting no relationship at all, the Spearman rank correlation reveals a substantial positive trend (Spearman rs = 0.49). This occurs because the untransformed dataset is highly skewed, with a few massive gene outliers dominating the linear calculation. While Pearson fails to capture this due to its strict assumption of linearity on raw values, Spearman correctly identifies the severe, non-linear length bias.
+
+*RPKM:* After applying RPKM normalization, the regression line noticeably flattens out. By dividing the counts by the gene length in kilobases, RPKM successfully scales down the artificial inflation of longer features. This normalization is essential when comparing the abundance of different transcripts within the same sample.Statistically, this correction is validated by the metrics: Upon RPKM normalization, the Spearman rank correlation drops drastically from 0.49 down to 0.24. This halving of the rank correlation mathematically proves that the length bias has been successfully mitigated. The remaining weak correlation (rs = 0.24) and the slight drop of the regression line on the far right are expected technical artifacts caused by the necessary +1 pseudo-count transformation on log-scales and minor real-world variations in transcript fragmentation efficiency during library preparation.
