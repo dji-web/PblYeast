@@ -438,6 +438,102 @@ with .after = columnName)</li>
 </div>
 </div>
 </div>
+<div id="task-two" class="section level1">
+<h1>Task Two</h1>
+<div id="renewing-task-2-from-ast-week" class="section level2">
+<h2>Renewing Task 2 from ast week</h2>
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>## Warning: Paket &#39;tidyverse&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;ggplot2&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;tibble&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;tidyr&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;readr&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;purrr&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;dplyr&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;stringr&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;forcats&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## Warning: Paket &#39;lubridate&#39; wurde unter R Version 4.5.3 erstellt</code></pre>
+<pre><code>## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+## ✔ dplyr     1.2.1     ✔ readr     2.2.0
+## ✔ forcats   1.0.1     ✔ stringr   1.6.0
+## ✔ ggplot2   4.0.3     ✔ tibble    3.3.1
+## ✔ lubridate 1.9.5     ✔ tidyr     1.3.2
+## ✔ purrr     1.2.2     
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()
+## ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+<pre class="r"><code>counts_df &lt;- read_csv(&quot;basic_yeast_heatshock.csv&quot;)</code></pre>
+<pre><code>## Rows: 7126 Columns: 10
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr (1): gene_id
+## dbl (9): 25_0_r1, 25_0_r2, 25_0_r3, 42_10_r1, 42_10_r2, 42_10_r3, 42_30_r1, ...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>gtf &lt;- read_tsv(&quot;annotation.gtf&quot;, col_names = FALSE, comment = &quot;#&quot;)</code></pre>
+<pre><code>## Rows: 42247 Columns: 9
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;\t&quot;
+## chr (7): X1, X2, X3, X6, X7, X8, X9
+## dbl (2): X4, X5
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>genes_filtered &lt;- gtf %&gt;% filter(X3 == &quot;gene&quot;) %&gt;% mutate(length = X5 - X4 + 1) # filter and calculate the gene length
+lengths_table &lt;- genes_filtered %&gt;% mutate(gene_id = str_extract(X9, &#39;gene_id &quot;[^&quot;]+&quot;&#39;) %&gt;% str_remove_all(&#39;gene_id &quot;|&quot;&#39;)) %&gt;% select(gene_id, length)
+head(lengths_table)</code></pre>
+<pre><code>## # A tibble: 6 × 2
+##   gene_id   length
+##   &lt;chr&gt;      &lt;dbl&gt;
+## 1 YDL248W     1152
+## 2 YDL247W-A     75
+## 3 YDL247W     1830
+## 4 YDL246C     1074
+## 5 YDL245C     1704
+## 6 YDL244W     1023</code></pre>
+<pre class="r"><code>counts_with_length &lt;- counts_df %&gt;% inner_join(lengths_table, by = &quot;gene_id&quot;)
+
+count_matrix &lt;- counts_with_length %&gt;% select(!length) %&gt;% column_to_rownames(&quot;gene_id&quot;) %&gt;% as.matrix()
+
+genes_length &lt;- counts_with_length$length
+library_sizes &lt;- colSums(count_matrix)
+cpm_matrix &lt;- t(t(count_matrix) / library_sizes) * 1000000
+rpkm_matrix &lt;- (count_matrix * 10^9) / (genes_length * rep(library_sizes, each = nrow(count_matrix)))
+
+head(cpm_matrix)</code></pre>
+<pre><code>##            25_0_r1   25_0_r2    25_0_r3   42_10_r1   42_10_r2   42_10_r3
+## 15S_rRNA  0.349382  0.000000  0.6236979  0.0000000  0.5101201  0.0000000
+## 21S_rRNA 13.800590  3.398930  4.1164060  7.7705922  2.8056608  2.0499522
+## HRA1      0.000000  0.000000  0.1247396  0.7770592  0.5101201  0.6833174
+## ICR1     18.342556 29.079736 26.8190086 32.3256637 40.5545516 27.6743548
+## LSR1      8.909242  1.510636  1.1226562  1.2432948  3.0607209  2.0499522
+## NME1      4.017893  1.888295  1.8710936 26.7308373 10.9675831 12.6413720
+##            42_30_r1   42_30_r2   42_30_r3
+## 15S_rRNA  0.1780649  0.3105190  0.1752245
+## 21S_rRNA  4.8077522 10.4023876  5.7824090
+## HRA1      0.5341947  0.7762976  1.4017961
+## ICR1     52.8852746 76.8534609 73.2438473
+## LSR1      6.9445310  6.6761592 10.1630219
+## NME1     18.5187493 29.1887892 28.2111469</code></pre>
+<pre class="r"><code>head(rpkm_matrix)</code></pre>
+<pre><code>##             25_0_r1   25_0_r2   25_0_r3  42_10_r1   42_10_r2  42_10_r3
+## 15S_rRNA  0.2118751 0.0000000 0.3782279  0.000000  0.3093512  0.000000
+## 21S_rRNA  3.1089412 0.7656973 0.9273273  1.750528  0.6320479  0.461805
+## HRA1      0.0000000 0.0000000 0.2211695  1.377765  0.9044683  1.211556
+## ICR1      5.7338406 9.0902582 8.3835601 10.104928 12.6772590  8.650939
+## LSR1      7.5823332 1.2856473 0.9554521  1.058123  2.6048688  1.744640
+## NME1     11.8173331 5.5538075 5.5032165 78.620110 32.2575975 37.180506
+##            42_30_r1   42_30_r2   42_30_r3
+## 15S_rRNA  0.1079836  0.1883075  0.1062611
+## 21S_rRNA  1.0830710  2.3434079  1.3026378
+## HRA1      0.9471537  1.3764142  2.4854541
+## ICR1     16.5318145 24.0242141 22.8958572
+## LSR1      5.9102392  5.6818376  8.6493803
+## NME1     54.4669098 85.8493800 82.9739616</code></pre>
+</div>
+</div>
 
 
 

@@ -56,3 +56,34 @@ to ungroup, use ungroup() for following calaculations
 * select(): select the columns by name. The output is a tibble. the same function can be used for deselecting a column (just add an "!" in front of the columnName)
 helper functions for select(): starts_with(""); ends_with(""); contains(""); num_range("")
 * mutate(): create new columns based off other columns (e.g. calculating with two columns; with .before = columnName the new column will be added on the left side of the chosen column; the opposite with .after = columnName)
+
+# Task Two
+## Renewing Task 2 from last week
+```{r}
+library(tidyverse)
+
+counts_df <- read_csv("basic_yeast_heatshock.csv")
+gtf <- read_tsv("annotation.gtf", col_names = FALSE, comment = "#")
+
+genes_filtered <- gtf %>% filter(X3 == "gene") %>% mutate(length = X5 - X4 + 1) # filter and calculate the gene length
+lengths_table <- genes_filtered %>% mutate(gene_id = str_extract(X9, 'gene_id "[^"]+"') %>% str_remove_all('gene_id "|"')) %>% select(gene_id, length)
+head(lengths_table)
+
+counts_with_length <- counts_df %>% inner_join(lengths_table, by = "gene_id")
+
+count_matrix <- counts_with_length %>% select(!length) %>% column_to_rownames("gene_id") %>% as.matrix()
+
+genes_length <- counts_with_length$length
+library_sizes <- colSums(count_matrix)
+cpm_matrix <- t(t(count_matrix) / library_sizes) * 1000000
+rpkm_matrix <- (count_matrix * 10^9) / (genes_length * rep(library_sizes, each = nrow(count_matrix)))
+
+head(cpm_matrix)
+head(rpkm_matrix)
+                                          
+```
+
+## Renewing Task 3 from last week
+```{r}
+
+
