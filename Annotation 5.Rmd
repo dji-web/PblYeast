@@ -1,0 +1,58 @@
+---
+title: "Annotation 5"
+output: html_document
+date: "2026-06-01"
+---
+
+# Tidyverse
+
+Tidyverse is a collection of packeges for R to better organize and work eficcietnt through projects. Thr core packages are the following ones:
+
+* readr: data import
+* tidyr: data tidying
+* tibble: modern re-imagining of data frames
+* dplyr: data manipulation
+* stringr: for strings
+* ggplot2: data visualisation
+* purrr: functional programming
+* forcats: dealing factors
+
+There are official cheat-sheets for each package.
+
+read_csv() for reading the comma-seperated values
+if parsing, the best option might be to parse columns after loading the data to expolore the data first
+
+A tibble is a like a dataframe, but with more enforcements and informations (e.g. dimensions and variable parameter) -> keeping the data consistent and ensure compatibility and efficiency in a project.
+Compared to a dataframe (data.frame()), it lists the dimensions of the table and specifys the datatypes of each column
+To convert a dataframe into a tibble, the command as_tibble(df) will do it
+
+## Reshape data:
+The command gather() takes multiple columns and collapses them into two new columns: a Key (the original column names) and a Value (the data inside those columns). It converts from wide to long format and is the standard requirement for  ggplot2 and performing statistical modeling
+The command spread() does the exact opposite: it takes values from a "Long" list and distributes them into separate, side-by-side columns. In converts from long to wide, each category gets its own column. This version is often easier to read and preferred for summarizing results 
+expand() makes a dataframe with every possible combination of the chosen variables
+gather() and spread() are the older versions of this command. The new versions are pivot_longer() and pivot_wider()
+
+**Dealing with NA's:** 
+drop_na(table) -> deletes all rows with NA (may delete lots of data)
+fill(table, columnName) -> fills the NA's whti the most recent value (value above)
+replace_na(table, replace = list(columnName = value)); often used inside mutate()
+
+**Unite and seperate:**
+separate(data, col, into =c(colName1, colName2), sep = "/") is the argument to split one cell into multiple cells. The agrument for the separator needs to be specified (in this case with "/").
+unite(data, colName1, colName2, col = newColumn, sep = ":") merges multiple cells into one. The intended separator needs to be specified.
+
+### dplyr
+
+in all commands always dataset - pipe - command
+
+* %>%: command for Pipes. Useful for a series of filters or groups without making new variables
+* summarize(): explore/ summarize the data
+* group_by(): splits the dataset into hidden, internal groups based on one or more variables -> allows to perform group specific operations in the next step. often used in combination with summarize (group_by %>% summarize())
+to ungroup, use ungroup() for following calaculations
+* count(): see how many counts for each group exists (sort = TRUE arranges in descending order)
+* filter(): extract rows from the data that meet a certain logical criteria
+* distinct(): gives the distinct/ unique values for the selected variable (select multiple columns to get the combination for different variables)
+* arrange(): sort and reorder rows in a dataset based on their values (sorts in an ascending order by default; for a descending order, add desc(value))
+* select(): select the columns by name. The output is a tibble. the same function can be used for deselecting a column (just add an "!" in front of the columnName)
+helper functions for select(): starts_with(""); ends_with(""); contains(""); num_range("")
+* mutate(): create new columns based off other columns (e.g. calculating with two columns; with .before = columnName the new column will be added on the left side of the chosen column; the opposite with .after = columnName)
