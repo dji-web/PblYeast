@@ -1,0 +1,310 @@
+---
+title: "Data Exploration mit Gapminder"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+Ich übe hier die Plot-Sachen aus Kapitel 3 durch, aber auf dem Gapminder-Datensatz
+statt auf den Microarray-Daten aus dem Buch. Idee: jeden Code aus dem Kapitel einmal
+selbst auf eigene Daten anwenden, damit man die Funktionen wirklich kennt.
+
+Die CSV ist mit Semikolon getrennt, deswegen `sep = ";"` (sonst landet alles in einer Spalte).
+
+```{r laden}
+df <- read.csv("gapminder-FiveYearData.csv", sep = ";")
+library(ggplot2)
+str(df)
+```
+
+Spalten: `country, year, pop, continent, lifeExp, gdpPercap`.
+
+Wie das aufs Buch passt: `continent` ist die kategoriale Variable (im Buch `sampleGroup`),
+`lifeExp`/`gdpPercap`/`pop` sind die kontinuierlichen Messwerte (im Buch `density` bzw.
+die Expressionswerte), `year` ist Zeit. Praktisch: die Daten sind eh schon im long format
+(jede Zeile = ein Land in einem Jahr), das `melt`/`reshape` aus dem Buch brauche ich also gar nicht.
+
+# 3.2 Basis-Grafik
+
+Der Standard-`plot`. BIP gegen Lebenserwartung.
+
+```{r basis-plot}
+plot(df$gdpPercap, df$lifeExp)
+```
+
+Dasselbe nochmal mit ordentlichen Achsen und anderem Symbol/Farbe:
+
+```{r basis-plot-custom}
+plot(df$gdpPercap, df$lifeExp,
+     xlab = "BIP pro Kopf", ylab = "Lebenserwartung",
+     pch = 3, col = "blue")
+```
+
+Histogramm und Boxplot mit Bordmitteln. Boxplot hier nach Kontinent gruppiert (`~`).
+
+```{r basis-hist-box}
+hist(df$lifeExp, breaks = 25, main = "")
+boxplot(lifeExp ~ continent, data = df)
+```
+
+# 3.4 ggplot2
+
+Der gleiche Scatterplot wie oben, nur eben in ggplot.
+
+```{r gg-erst}
+ggplot(df, aes(x = gdpPercap, y = lifeExp)) + geom_point()
+```
+
+Fürs Barplot-Beispiel braucht das Buch eine zusammengefasste Tabelle (`groups`).
+Ich zähl einfach die Zeilen pro Kontinent:
+
+```{r gg-bar}
+library(dplyr)
+groups <- df |>
+  group_by(continent) |>
+  summarise(n = n())
+
+ggplot(groups, aes(x = continent, y = n)) +
+  geom_bar(stat = "identity")
+```
+
+`stat = "identity"` ist wichtig, sonst will geom_bar selber zählen. Hier hab ich `n` ja schon.
+
+Eingefärbt und Labels gedreht (bei langen Namen sonst unleserlich):
+
+```{r gg-bar-fill}
+ggplot(groups, aes(x = continent, y = n, fill = continent)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Speichern als PDF (Vektor, skaliert verlustfrei):
+
+```{r gg-save, eval=FALSE}
+gg <- ggplot(df, aes(x = gdpPercap, y = lifeExp)) + geom_point()
+ggsave("gapminder-scatter.pdf", plot = gg)
+```
+
+# 3.5 Layer
+
+Mehrere Layer auf denselben Daten: Punkte + Glättungslinie + Konfidenzband.
+
+```{r gg-smooth}
+ggplot(df, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "loess")
+```
+
+Wenn man `color` nur im geom_point setzt, bleibt die Glättung über alle Daten gemeinsam:
+
+```{r gg-color}
+ggplot(df, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = continent), shape = 19) +
+  geom_smooth(method = "loess")
+```
+
+ggplot-Histogramm:
+
+```{r gg-hist}
+ggplot(df, aes(x = lifeExp)) + geom_histogram(binwidth = 2)
+```
+
+Schrittweiser Aufbau mit `+`, so wie das `pb`-Beispiel im Buch. Find ich praktisch
+zum Ausprobieren, weil man nicht jedes Mal alles neu schreiben muss.
+
+```{r gg-stepwise}
+pb <- ggplot(groups, aes(x = continent, y = n))
+pb <- pb + geom_bar(stat = "identity")
+pb <- pb + aes(fill = continent)
+pb <- pb + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+pb
+```
+
+Und das Ganze in Polarkoordinaten, nur um es mal gesehen zu haben:
+
+```{r gg-polar}
+pb + coord_polar() +
+  theme(axis.text.y = element_blank(), axis.ticks = element_blank()) +
+  xlab("") + ylab("")
+```
+
+# 3.6 Verteilungen in 1D
+
+Im Buch ist die kategoriale Variable `gene` und der Wert `value`. Bei mir: `continent` und `lifeExp`.
+
+Erstmal nur der Mittelwert als Balken – das ist genau die Variante, die das Buch als
+informationsarm bezeichnet, weil die ganze Verteilung verloren geht:
+
+```{r stat-summary-bar}
+ggplot(df, aes(x = continent, y = lifeExp)) +
+  stat_summary(fun = mean, geom = "bar")
+```
+
+Mit Fehlerbalken (Standardfehler über `mean_cl_normal` aus Hmisc):
+
+```{r stat-summary-err}
+library(Hmisc)
+ggplot(df, aes(x = continent, y = lifeExp, fill = continent)) +
+  stat_summary(fun = mean, geom = "bar") +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar", width = 0.25)
+```
+
+Boxplot sagt deutlich mehr (Median, Streuung, Schiefe):
+
+```{r box}
+p <- ggplot(df, aes(x = continent, y = lifeExp, fill = continent))
+p + geom_boxplot()
+```
+
+Dotplot und Beeswarm zeigen die Einzelpunkte. Mit allen 1704 Zeilen wird das aber zu voll,
+deshalb nehm ich nur ein Jahr.
+
+```{r dot-bee}
+df2007 <- subset(df, year == 2007)
+
+ggplot(df2007, aes(x = continent, y = lifeExp)) +
+  geom_dotplot(binaxis = "y", binwidth = 1, stackdir = "center",
+               aes(color = continent))
+
+library(ggbeeswarm)
+ggplot(df2007, aes(x = continent, y = lifeExp, color = continent)) +
+  geom_beeswarm()
+```
+
+Dichtekurven:
+
+```{r density}
+ggplot(df, aes(x = lifeExp, color = continent)) + geom_density()
+```
+
+Violinplots (Dichte gespiegelt):
+
+```{r violin}
+p + geom_violin()
+```
+
+Ridgeline – versetzte Dichten, gut wenn es viele Gruppen sind:
+
+```{r ridge}
+library(ggridges)
+ggplot(df, aes(x = lifeExp, y = continent, fill = continent)) +
+  geom_density_ridges()
+```
+
+ECDF. Mag ich, weil kein Glättungsfenster nötig ist und nichts an Info verloren geht:
+
+```{r ecdf}
+ggplot(df, aes(x = lifeExp, color = continent)) + stat_ecdf()
+```
+
+Effekt einer Transformation (3.6.8): `gdpPercap` ist extrem rechtsschief, mit log10 sieht
+man die Verteilung erst richtig.
+
+```{r transform-dens}
+ggplot(df, aes(x = gdpPercap)) + geom_histogram(bins = 100)
+ggplot(df, aes(x = log10(gdpPercap))) + geom_histogram(bins = 100)
+```
+
+# 3.7 Scatterplots in 2D
+
+Volle Punktwolke, dann mit Transparenz gegen das Overplotting:
+
+```{r scatter-alpha}
+scp <- ggplot(df, aes(x = gdpPercap, y = lifeExp))
+scp + geom_point()
+scp + geom_point(alpha = 0.1)
+```
+
+2D-Dichte als Kontur und hexagonales Binning:
+
+```{r scatter-dens-hex}
+scp + geom_density2d()
+scp + geom_hex() + coord_fixed()
+```
+
+Banking-Beispiel: im Buch die Sonnenflecken, bei mir nehm ich eine Zeitreihe eines Landes.
+
+```{r banking}
+afg <- subset(df, country == "Afghanistan")
+ggplot(afg, aes(x = year, y = lifeExp)) + geom_line()
+```
+
+# 3.8 Mehr als zwei Dimensionen
+
+Facetting nach Kontinent, einmal als Grid und einmal als Wrap:
+
+```{r facet}
+ggplot(df, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + facet_grid(. ~ continent)
+
+ggplot(df, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + facet_wrap(~ continent, ncol = 2)
+```
+
+Zwei Facetting-Variablen (Jahre in 3 Klassen geschnitten):
+
+```{r facet-two}
+ggplot(df, aes(x = log10(gdpPercap), y = lifeExp)) +
+  geom_point() + facet_grid(continent ~ cut(year, 3))
+```
+
+Interaktiv mit plotly:
+
+```{r plotly, eval=FALSE}
+library(plotly)
+plot_ly(df, x = ~gdpPercap, y = ~lifeExp, color = ~continent)
+```
+
+# 3.9 Farben
+
+Eigene Palette aus RColorBrewer statt der ggplot-Defaults. `Set2` ist qualitativ,
+also gedacht für Kategorien ohne Reihenfolge.
+
+```{r colors}
+library(RColorBrewer)
+brewer.pal(5, "Set1")
+
+ggplot(df, aes(x = continent, y = lifeExp, fill = continent)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set2")
+```
+
+# 3.10 Heatmap
+
+Im Buch: Gene × Samples. Bei mir mach ich Länder × Jahre mit lifeExp als Wert.
+Über alle Länder wird das riesig, deshalb nur Europa.
+
+```{r heatmap}
+library(pheatmap)
+library(tidyr)
+
+mat <- subset(df, continent == "Europe") |>
+  pivot_wider(id_cols = country, names_from = year, values_from = lifeExp) |>
+  tibble::column_to_rownames("country") |>
+  as.matrix()
+
+pheatmap(mat, cluster_cols = FALSE)
+```
+
+Spalten (Jahre) nicht clustern, damit die Reihenfolge chronologisch bleibt. Zeilen werden
+geclustert, dann landen ähnliche Länder nebeneinander.
+
+# 3.11 Rang-Transformation
+
+Zeigt schön, dass der scheinbare Zusammenhang teilweise nur an der Punktdichte liegt:
+
+```{r rank}
+ggplot(df, aes(x = gdpPercap, y = lifeExp)) + geom_point(size = 0.2)
+ggplot(df, aes(x = rank(gdpPercap), y = lifeExp)) + geom_point(size = 0.2)
+```
+
+# Was nicht ging
+
+Die Bioconductor-Teile aus dem Kapitel (`ExpressionSet`, `Biobase::exprs`,
+`AnnotationDbi::select`, `mouse4302.db`) lassen sich nicht übertragen, die hängen an den
+Microarray-Objekten und haben kein Gapminder-Gegenstück. Die Mathe-Symbol-Sachen aus 3.12
+sind nicht datenabhängig, da kann man höchstens die `expression()`-Syntax übernehmen,
+z.B. `xlab(expression(log[10](gdpPercap)))`.
