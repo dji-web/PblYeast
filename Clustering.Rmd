@@ -1,0 +1,238 @@
+---
+title: "Clustering"
+output: html_document
+date: "2026-06-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Clustering takes a set of objects, described by features and adds them to groups. 
+Clustering algorithms will always find clusters even if there is none, so it is important to validate the clusters
+
+### How to measure similarity
+which features?
+should we transform the features? 
+**Euclidean distance:**  
+square root of the sum of squares of the differences between two points
+
+**Manhattan distance:**
+Sum of the absolute distances in all coordinates
+
+**Hamming distance**:
+counts the number of differences between two strings
+
+**Jaccard distance:**
+To measure the dissimilarity between two sets. It is calculated by subtracting the Jaccard similarity from 1. Result between 0 (sets are identical) and 0 (no overlap)
+
+**Correlation based distance:**
+Two vectors are similar, if their correlation is high
+
+
+Nor only vectors and numbers can be compared over distance, also complex or distances in Phylogeny (the leaves of a tree)
+
+### Nonparametric mixture detection k-Mean
+Main choice: the number of clusters k
+
+**PAM:** 
+1. Randomly pick k distinct cluster centers out of the observations
+2. Assign each observation to the group to whose center it is the closest
+3. Choose a new center for each group by minimizing the distances of all group members to the new center
+-> Repeat step 2 & 3 until convergence
+-> for each implementation, differnt groups will appear (random start)
+
+k-means works the same but uses euclidean distance, PAM uses different measurement of distance
+k-means is therefore sensitive to outliers
+
+```{r}
+# Pam or k-means example
+```
+
+### Dansity based clustering (DB Scan)
+This method looks for regions of high density seperated by sparse regions (concept of density-reachability)
+The advantage is being able to cope with clusters that are not convex
+Groups of point must have at least *Minpts* points to count as a cluster
+
+### Hirarchical clustering
+Bottom-up approach, can be split in two approaches:
+*Dendrogram ordering:* horizontal distances and orders are usually meaningless, vertical ones encode information
+*Top-Down hierarchies:* split all the objects according to chosen criterion -> sort heterogeneous gruops into more homogeneous subgroups
+
+### How to compute (dis)siimilarities between aggregated clusters
+**single linkage:** computes the distance between clusters as the smallest distance between two point in the two clusters
+**complete linkage:** defines the distance between two points between the clusters wirh the largest distance
+**average linkage:** distance between pairs of points between two clusters
+**Ward's method:** the goal is to minimize the variance within the clusters (results in smaller clusters most of the time)
+
+## Assesing the quality of clustering result
+Within-Group sum of square (and ellbow method to find an appropriate value for k)
+Calinski-Harabasz index: compares the between group sum of square with the within-group sum of square
+Gap-statistic: is the cluster real or by coincidence? How fast drops the internal distance with the increase of k? This helps choosing the best k.
+
+### Cluster validation with bootstrap
+Taking random subsamples of the data and compare the different resulting clusters 
+The between-cluster distance is measured by Euclidean dissimilarity
+
+## Clustering as a means for denoising
+Remove technical noise from data (for example with DADA)
+
+## Wo hätte man Clustering in den bisherigen Aufgaben einsetzen können?
+1. Heatshock experiment: which genes are upregulated (maybe even differentiate between immediately (20 min) and secondly (30 min)), which ones downregulated and which ones uneffected in expression? 
+
+2. To identify functional groups (genes which are up- or downregulated at the same time may have a role in the same function, e.g. same metabolic pathway)
+
+3. Clustering the different experimental trials timepoint within one trial/ condition -> Dendrogramm for quality check, if the Datapoints will cluster within their expected one. 
+
+ 
+# Task 2
+```{r}
+library(tidyverse)
+
+yeast_data <- read_csv("basic_yeast_heatshock.csv")
+expression_matrix <- yeast_data %>% column_to_rownames(var =  "gene_id")
+
+distance_matrix_euclidean <- dist(t(expression_matrix), method = "euclidean")
+
+hc_complete <- hclust(distance_matrix_euclidean, method = "complete")
+
+plot(hc_complete,
+     main = "Hirarchical Clustering (euclidean, complete)", xlab = "biological trials", sub = "")
+```
+
+
+```{r}
+log_counts <- log2(expression_matrix + 1)
+gene_dist <- dist(log_counts, method = "euclidean")
+gene_hc <- hclust(gene_dist, method = "complete")
+num_clusters <- 5
+gene_clusters <- cutree(gene_hc, k = num_clusters)
+
+violin_data <- log_counts %>% rownames_to_column(var = "gene_id") %>% mutate(Cluster_ID = as.factor(gene_clusters)) %>% pivot_longer(cols = starts_with("25_") | starts_with("42_"), names_to = "Sample", values_to = "Log_Expression")
+
+ggplot(violin_data, aes(x = Cluster_ID, y = Log_Expression, fill = Cluster_ID)) +
+       geom_violin(alpha = 0.7) + 
+         labs(title = "Genexpression after clusters", x = "Cluster ID", y = "Log2 (Counts + 1") + theme_minimal()
+```
+
+```{r, fig.width=8, fig.height=6}
+library(pheatmap)
+
+top50_changing_data <- yeast_data %>% mutate(mean_0min = (`25_0_r1` + `25_0_r2` + `25_0_r3`) / 3, mean_10min = (`42_10_r1` + `42_10_r2` + `42_10_r3`) / 3, mean_30min = (`42_30_r1` + `42_30_r2` + `42_30_r3`) / 3) %>% mutate(diff_10_vs_0 = abs(mean_10min - mean_0min), diff_30_vs_10 = abs(mean_30min - mean_10min)) %>% mutate(max_change = pmax(diff_10_vs_0, diff_30_vs_10)) %>% slice_max(order_by = max_change, n = 50) %>% select(gene_id, starts_with("25_"), starts_with("42_"))
+
+heatmap_matrix <- top50_changing_data %>% column_to_rownames(var = "gene_id")
+heatmap_matrix_log <- log2(heatmap_matrix + 1)
+sample_info <- data.frame(Timepoint = c("0 min", "0 min", "0 min", "10 min", "10 min", "10 min", "30 min", "30 min", "30 min"))
+rownames(sample_info) <- colnames(heatmap_matrix_log)
+
+pheatmap(heatmap_matrix_log, 
+         scale = "row", 
+         annotation_col = sample_info,
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
+         clustering_method = "complete",
+         show_rownames = FALSE,
+         angle_col = 45,
+         main = "Clustering of the 50 genes with the highest change")
+```
+
+# Task 3
+
+Yes, we need to filter out genes that have a value of zero across all samples (i.e., were not measured at all). Since they do not change at all, they have no variance and would cause errors during the mathematical calculation (division by the standard deviation).
+
+Yes, scaling is absolutely crucial! Biological systems contain highly expressed genes (such as housekeeping genes) with expression levels in the tens of thousands. At the same time, there are regulatory genes with values below 50 that may quadruple under stress. Without scaling, the PCA would ultimately measure only the absolute abundance of those highly expressed genes. Scaling (setting the mean to 0 and variance to 1) ensures that the relative change of every single gene is mathematically weighted equally.
+
+```{r}
+library(broom)
+
+yeast_long <- yeast_data %>% filter(rowSums(select(., starts_with("25_") | starts_with("42_"))) > 0) %>% pivot_longer(cols = starts_with("25_") | starts_with("42_"), names_to = "Sample", values_to = "Expression")
+
+pca_results <- yeast_long %>% nest(data = everything()) %>% mutate(pca = map(data, ~prcomp(.x %>% pivot_wider(names_from = gene_id, values_from = Expression) %>% select(-Sample), center = TRUE, scale. = TRUE)), augmented = map2(pca, data, ~augment(.x, data = .y %>% pivot_wider(names_from = gene_id, values_from = Expression))))
+
+pca_plot_data <- pca_results %>% unnest(augmented) %>% select(Sample, .fittedPC1, .fittedPC2) %>% mutate(Timepoint = case_when(str_starts(Sample, "25_0") ~ "0 min",
+                             str_starts(Sample, "42_10") ~ "10 min", 
+                             str_starts(Sample, "42_30") ~ "30 min"))
+
+ggplot(pca_plot_data, aes(x = .fittedPC1, y = .fittedPC2, color = Timepoint)) + 
+  geom_point(size = 5, alpha = 0.8) + 
+  labs(title = "Sample level PCA",
+       x = "Principle Component 1",
+       y = "Principle Component 2") + theme_minimal() + 
+  scale_color_manual(values = c("0 min" = "#3498db", "10 min" = "#e74c3c", "30 min" = "#f39c12"))
+```
+
+```{r}
+library(ggrepel)
+pca_loadings <- pca_results %>% mutate(tidy_loadings = map(pca, ~tidy(.x, matrix = "rotation"))) %>% unnest(tidy_loadings) %>% select(column, PC, value) %>% pivot_wider(names_from = PC, names_prefix = "PC", values_from = value) 
+
+top_loadings_genes <- pca_loadings %>% mutate(distance_from_zero = PC1^2 + PC2^2) %>% slice_max(order_by = distance_from_zero, n = 5) %>% pull(column)
+pca_loadings <- pca_loadings %>% mutate(label = if_else(column %in% top_loadings_genes, column, ""))
+
+ggplot(pca_loadings, aes(x = PC1, y = PC2)) + geom_point(color = "lightgrey", alpha = 0.4, size = 1.2) + geom_point(data = filter(pca_loadings, label != ""), color = "red", size = 3) + geom_text_repel(aes(label = label), box.padding = 1.2, point.padding = 0.4, force = 30, direction = "both", segment.color = "grey30", segment.size = 0.4, size = 3.5, fontface = "bold") + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkgrey") + 
+  geom_vline(xintercept = 0, linetype = "dashed", color = "darkgrey") + 
+  labs(title = "PCA Loadings", x = "Loadings for PC1", y = "Loadings for PC2", subtitle = "red point lable the genes with the highest impact on PC1 and PC2") + theme_minimal()
+```
+
+
+```{r}
+
+# Log Transformation and long format
+yeast_log_profiles <- yeast_data %>%
+  filter(gene_id %in% top_loadings_genes) %>%
+  mutate(across(starts_with("25_") | starts_with("42_"), ~ log2(.x + 1))) %>%
+  pivot_longer(
+    cols = starts_with("25_") | starts_with("42_"),
+    names_to = "Sample",
+    values_to = "Log2_Expression"
+  ) %>%
+  mutate(
+    Timepoint = case_when(
+      str_starts(Sample, "25_0") ~ "0 min",
+      str_starts(Sample, "42_10") ~ "10 min",
+      str_starts(Sample, "42_30") ~ "30 min"
+    ),
+    Timepoint_Num = case_when(
+      Timepoint == "0 min" ~ 0,
+      Timepoint == "10 min" ~ 10,
+      Timepoint == "30 min" ~ 30
+    )
+  )
+
+# Separate Tabelle für die Mittelwerte (für den Linienplot)
+yeast_log_means <- yeast_log_profiles %>%
+  group_by(gene_id, Timepoint_Num, Timepoint) %>%
+  summarize(Mean_Log2 = mean(Log2_Expression), .groups = "drop")
+```
+
+
+```{r}
+ggplot(yeast_log_profiles, aes(x = Timepoint, y = Log2_Expression, color = gene_id)) +
+  geom_jitter(width = 0.15, size = 3, alpha = 0.7) +
+  facet_wrap(~gene_id, scales = "free_y") +
+  labs(
+    title = "Gene Expression Profiles (All Replicates)",
+    subtitle = "Log2-transformed Expression of the top 5 genes for most variance",
+    x = "Experimental Condition",
+    y = "Log2(Counts + 1)",
+    color = "Gene ID"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none") # Legende weglassen, da Facets beschriftet sind
+```
+
+```{r}
+ggplot(yeast_log_means, aes(x = Timepoint_Num, y = Mean_Log2, color = gene_id, group = gene_id)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_x_continuous(breaks = c(0, 10, 30), labels = c("0 min", "10 min", "30 min")) +
+  labs(
+    title = "Gene Expression Profiles (Connected Means)",
+    subtitle = "Validierung: Zeitlicher Verlauf der Mittelwerte (Log2)",
+    x = "Time after Heat Shock",
+    y = "Mean Log2(Counts + 1)",
+    color = "Gene ID"
+  ) +
+  theme_minimal()
+```
+
