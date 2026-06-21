@@ -36,7 +36,7 @@ Nor only vectors and numbers can be compared over distance, also complex or dist
 Main choice: the number of clusters k
 
 **PAM:** 
-1. Randomly pick k distinct cluster centers out of the observations
+1. Randomly pick k distinct cluster centers out of the observations 
 2. Assign each observation to the group to whose center it is the closest
 3. Choose a new center for each group by minimizing the distances of all group members to the new center
 -> Repeat step 2 & 3 until convergence
