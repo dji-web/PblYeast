@@ -1,0 +1,242 @@
+---
+title: "Assignment8"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(lubridate)
+library(gridExtra)
+```
+
+# Task 1: Biological Networks (tidyverse + ggplot)
+
+## Load data
+
+```{r load-data}
+col_names <- c('Regulator_systematic', 'Regulator_standard', 'Target_systematic',
+                'Target_standard', 'Id', 'Date', 'Environment', 'Regulation',
+                'Type', 'Method')
+
+yeastract <- read_tsv(
+  "yeastract2019-flat-file.tsv",
+  col_names = col_names,
+  col_types = cols(.default = "c")
+)
+
+glimpse(yeastract)
+```
+
+## 1. How many transcription factors / target genes are included?
+
+```{r tf-target-count}
+n_tfs     <- n_distinct(yeastract$Regulator_systematic)
+n_targets <- n_distinct(yeastract$Target_systematic)
+
+tibble(
+  Category = c("Transcription Factors", "Target Genes"),
+  Count    = c(n_tfs, n_targets)
+) |>
+  ggplot(aes(x = Category, y = Count, fill = Category)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = Count), vjust = -0.4, size = 4) +
+  scale_fill_manual(values = c("Transcription Factors" = "#4C72B0",
+                               "Target Genes"          = "#DD8452")) +
+  labs(
+    title = "Number of Unique TFs and Target Genes in YEASTRACT",
+    x = NULL, y = "Count"
+  ) +
+  theme_bw()
+```
+
+## 2. Edge descriptions and redundant regulator-target pairs
+
+```{r edge-redundancy}
+# Total edges vs. unique regulator-target pairs
+total_edges  <- nrow(yeastract)
+unique_pairs <- yeastract |>
+  distinct(Regulator_systematic, Target_systematic) |>
+  nrow()
+
+redundant <- total_edges - unique_pairs
+
+tibble(
+  Category = c("Total edges", "Unique reg-target pairs", "Redundant edges"),
+  Count    = c(total_edges, unique_pairs, redundant)
+) |>
+  ggplot(aes(x = reorder(Category, -Count), y = Count, fill = Category)) +
+  geom_col(show.legend = FALSE) +
+  geom_text(aes(label = scales::comma(Count)), vjust = -0.4, size = 3.5) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_brewer(palette = "Set2") +
+  labs(
+    title = "Total edges vs. unique regulator-target pairs",
+    subtitle = paste0("Redundant (same reg-target, multiple evidence): ",
+                      scales::comma(redundant)),
+    x = NULL, y = "Count"
+  ) +
+  theme_bw()
+```
+
+## 3. Degree distribution: targets per TF and TFs per target
+
+```{r degree-distribution}
+# Targets per TF
+targets_per_tf <- yeastract |>
+  distinct(Regulator_systematic, Target_systematic) |>
+  count(Regulator_systematic, name = "n_targets")
+
+p1 <- ggplot(targets_per_tf, aes(x = n_targets)) +
+  geom_histogram(bins = 50, fill = "#4C72B0", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    title = "Targets per Transcription Factor",
+    x = "Number of targets (log10)", y = "Count of TFs"
+  ) +
+  theme_bw()
+
+# TFs per target
+tfs_per_target <- yeastract |>
+  distinct(Regulator_systematic, Target_systematic) |>
+  count(Target_systematic, name = "n_tfs")
+
+p2 <- ggplot(tfs_per_target, aes(x = n_tfs)) +
+  geom_histogram(bins = 50, fill = "#DD8452", color = "white") +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    title = "Transcription Factors per Target Gene",
+    x = "Number of TFs (log10)", y = "Count of targets"
+  ) +
+  theme_bw()
+
+grid.arrange(p1, p2, ncol = 1)
+```
+
+## 4. Timeframe of the data – histogram
+
+```{r timeframe}
+yeastract_dates <- yeastract |>
+  mutate(
+    # Try to parse the date; many entries are "YYYY Mon" or "YYYY Mon D"
+    Date_parsed = parse_date_time(Date, orders = c("Y b d", "Y b"), quiet = TRUE),
+    Year = year(Date_parsed)
+  ) |>
+  filter(!is.na(Year))
+
+ggplot(yeastract_dates, aes(x = Year)) +
+  geom_histogram(binwidth = 1, fill = "#55A868", color = "white") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Timeframe of YEASTRACT Data",
+    x = "Year of publication / evidence", y = "Number of edges"
+  ) +
+  theme_bw()
+```
+
+## 5. Distribution of Environment, Regulation, Type, and Method
+
+```{r distributions}
+# Helper: bar chart for a categorical column, top N
+plot_top <- function(df, col, top_n = 20, fill_color = "#4C72B0") {
+  df |>
+    count(.data[[col]], sort = TRUE) |>
+    slice_head(n = top_n) |>
+    mutate(!!col := fct_reorder(.data[[col]], n)) |>
+    ggplot(aes(x = .data[[col]], y = n)) +
+    geom_col(fill = fill_color) +
+    coord_flip() +
+    scale_y_continuous(labels = scales::comma) +
+    labs(title = paste("Distribution of", col), x = NULL, y = "Count") +
+    theme_bw(base_size = 9)
+}
+
+p_env  <- plot_top(yeastract, "Environment",  top_n = 20, fill_color = "#4C72B0")
+p_reg  <- plot_top(yeastract, "Regulation",   top_n = 10, fill_color = "#DD8452")
+p_type <- plot_top(yeastract, "Type",         top_n = 10, fill_color = "#55A868")
+p_meth <- plot_top(yeastract, "Method",       top_n = 20, fill_color = "#C44E52")
+
+grid.arrange(p_env, p_reg, p_type, p_meth, ncol = 2,
+             top = "Distribution of edge attributes in YEASTRACT")
+```
+
+## 6. Faceted plots – imbalances?
+
+```{r faceted-plots}
+# Facet Regulation by Type
+yeastract |>
+  count(Regulation, Type) |>
+  ggplot(aes(x = Regulation, y = n, fill = Regulation)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Type, scales = "free_y") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Regulation distribution faceted by Type",
+    subtitle = "Strong imbalance: most evidence is 'Direct' ChIP-based (N/A regulation)",
+    x = "Regulation", y = "Count"
+  ) +
+  theme_bw(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+```{r faceted-plots-2}
+# Facet Regulation by a simplified Method category
+yeastract |>
+  mutate(Method_group = case_when(
+    str_detect(Method, regex("ChIP", ignore_case = TRUE))       ~ "ChIP-based",
+    str_detect(Method, regex("Microarray", ignore_case = TRUE)) ~ "Microarray",
+    str_detect(Method, regex("RNA-seq|RNAseq", ignore_case = TRUE)) ~ "RNA-seq",
+    str_detect(Method, regex("RT-PCR|qPCR|PCR", ignore_case = TRUE)) ~ "PCR-based",
+    TRUE ~ "Other"
+  )) |>
+  count(Regulation, Method_group) |>
+  ggplot(aes(x = Regulation, y = n, fill = Regulation)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Method_group, scales = "free_y") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Regulation faceted by Method group",
+    subtitle = "ChIP-based methods dominate and are almost exclusively 'N/A' regulation",
+    x = "Regulation", y = "Count"
+  ) +
+  theme_bw(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+```{r faceted-plots-3}
+# Environment vs Regulation – highlight imbalance
+yeastract |>
+  count(Regulation, Environment) |>
+  group_by(Environment) |>
+  mutate(pct = n / sum(n)) |>
+  ungroup() |>
+  slice_max(order_by = n, n = 60) |>  # keep top environments by total count
+  ggplot(aes(x = Regulation, y = pct, fill = Regulation)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~Environment, scales = "free_x", ncol = 3) +
+  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+  labs(
+    title = "Regulation proportion per Environment (top environments)",
+    subtitle = "Unstressed log-phase growth dominates; 'N/A' regulation from ChIP experiments is ubiquitous",
+    x = "Regulation", y = "Proportion"
+  ) +
+  theme_bw(base_size = 8) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1))
+```
+
+## MSMB 04
+
+What mathematical background is used and how it is applied?
+
+Das Kapitel beruht auf einer Idee: eine beobachtete Verteilung als gewichtete Summe einfacher Verteilungen darzustellen. Weil die Gruppenzugehörigkeit eine versteckte Variable ist, lässt sich die Likelihood nicht direkt maximieren, deshalb nutzt der EM algorithmus den Satz von Bayes und gewichtete Maximum likelihood Schätzung.
+Beim Bootstrap behandelt man die vorhandenen Daten selbst als Verteilung und zieht daraus viele Stichproben, um zu sehen, wie stark eine Kennzahl (z. B. der Median) schwankt.
+Die Gamma-Poisson-Verteilung entsteht, wenn man viele Poisson-Zählquellen mit unterschiedlichen Raten mischt, und erklärt, warum RNA-Seq-Daten stärker streuen als reine Poisson-Daten. Und weil bei solchen Daten die Streuung vom Mittelwert abhängt, zeigt das Kapitel zum Schluss, wie man sie passend transformiert, damit spätere Analysen sauber funktionieren.
+
+
+Explain the EM algorithm in your own words:
+
+Das Kernproblem, dass der EM Algorithmus löst ist in echten Daten aus mehreren Verteilungen sieht man häufig nur vermischten Werte und nicht das Label (Gruppe A Gruppe B), die label sind versteckte (latente) variablen. EM löst das Henne-Ei problem: Um die Gruppen-Parameter (Mittelwerte, Varianzen) zu schätzen, bräuchtest du die Labels — und um die Labels zu raten, bräuchtest du die Parameter. EM iteriert zwischen beiden: 
+E-Schritt:
+Bei aktuellen Wahrscheinlichkeiten schätzt für jeden Punkt die Wahrscheinlichkeiten, zu Gruppe A oder B zu gehören.
+M-Schritt:
+Mit diesen Wahrscheinlichkeiten als Gewichte, werden die Parameter neu berechnet. Solange wiederholen bis es konvergiert.
