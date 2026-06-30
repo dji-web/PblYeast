@@ -381,6 +381,44 @@ cat("  Truth     :", m1, "true alternatives\n")
 
 # Task 2
 
+DESeq2 is one of the standard tools for detecting differentially expressed
+genes from RNA-seq count data. Raw read counts are noisy and depend on
+sequencing depth, so DESeq2 first normalises the counts across samples
+(using a median-of-ratios method) to make them comparable. It then fits a
+negative binomial generalized linear model to the counts of each gene,
+because RNA-seq counts are typically overdispersed compared to a simple
+Poisson model — biological replicates vary more than pure counting noise
+would predict. To get stable variance estimates even with few replicates,
+DESeq2 borrows information across all genes: it shrinks each gene's
+individual dispersion estimate towards a fitted trend describing how
+variance generally depends on mean expression. The same shrinkage idea is
+applied to the estimated fold changes, which keeps genes with low counts
+or high uncertainty from dominating downstream rankings purely due to
+noise.
+
+For each gene, DESeq2 then performs a Wald test (or, for more complex
+designs, a likelihood ratio test) against the null hypothesis that there
+is no difference in expression between the two conditions being compared.
+Because this test is run separately for every gene — typically several
+thousand times per comparison — DESeq2 automatically applies a multiple
+testing correction (Benjamini-Hochberg by default) and reports an adjusted
+p-value (padj) for each gene, exactly the FDR-control approach we
+discussed in Task 1.
+
+This matters biologically because differential expression is usually the
+entry point into understanding what a treatment or condition actually
+does at the molecular level. A list of genes that change significantly
+between conditions can point to which pathways are activated or repressed,
+which transcription factors might be driving the response, and which genes
+could be functionally important rather than just incidentally changed. In
+our case, comparing yeast at 25°C (baseline) to yeast under heat shock at
+42°C lets us identify the transcriptional heat-shock response — for
+example, genes coding for chaperones that get strongly upregulated to
+protect proteins from heat-induced misfolding. Without a method like
+DESeq2 that properly accounts for both biological variability and the
+multiple-testing problem, such a gene list would be dominated by noise
+rather than real biological signal.
+
 ```{r}
 library(tidyverse)
 library(DESeq2)
@@ -490,4 +528,31 @@ ggplot(overlap_long, aes(x = reorder(Combination_ID, -Number_Genes), y = Gen_Set
        fill = "Contained in intercept") + 
   theme(axis.text.x = element_blank(),
         panel.grid = element_blank())
-  
+```
+
+Looking at the overlap plot, the four gene sets (up/down at 10min, up/down
+at 30min) are not identical, but they do share a substantial core. The
+largest single combination is genes that are significantly upregulated at
+**both** 10min and 30min (1278 genes) — these are most likely the
+canonical heat-shock response genes (e.g. chaperones) that get switched on
+quickly and stay on throughout the stress response. Similarly, 992
+genes are downregulated at both time points, presumably genes related to
+normal growth and metabolism that get suppressed while the cell
+prioritises stress survival.
+
+At the same time, each time point also has a sizeable set of genes that
+are significant only at 10min (130 up, 96 down) or only at 30min
+(622 up, 992 & 718 down). This makes biological sense: the heat-shock
+response is not a single static state but a dynamic process — some genes
+are part of an early, transient response (significant at 10min only) and
+return to baseline as the cell adapts, while others are part of a later,
+sustained response that only becomes statistically detectable after 30
+minutes. No gene appears as both "up" and "down" at the same time point,
+which is expected since these categories are mutually exclusive by
+construction.
+
+Overall, the overlap confirms that the heat-shock response in yeast is
+substantially shared between the two time points, but with meaningful
+time-dependent differences — exactly the kind of pattern you would expect
+from a regulated, multi-stage stress response rather than random
+noise.
