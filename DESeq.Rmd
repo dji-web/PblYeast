@@ -1,0 +1,493 @@
+---
+title: "MSMB Chapter 6 – Testing"
+subtitle: "Key Concepts Explained"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    highlight: tango
+    code_folding: show
+---
+
+# Task 1
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+                      fig.width = 7, fig.height = 4, comment = "#>")
+library(ggplot2)
+library(dplyr)
+library(tibble)
+```
+
+---
+
+# 1 Null Hypothesis and Alternative Hypothesis
+
+## The basic idea
+
+When we analyse data, we usually want to know whether something interesting is
+going on — for example, whether a gene is differentially expressed between two
+conditions. But "interesting" needs a reference point. That reference is the
+**null hypothesis**: it describes a boring, default world where nothing is
+happening. In the gene expression example, the null hypothesis would be that the
+gene's expression is the same in both conditions.
+
+The **alternative hypothesis** is simply everything that is not the null — so any
+situation where there actually *is* a difference. We never test the alternative
+directly. Instead, we ask: how likely are our data if the null were true? If the
+answer is "very unlikely", we reject the null and accept that the alternative must
+hold.
+
+## Why the alternative is true when the null fails
+
+This works because together, null and alternative are exhaustive — they cover all
+possibilities. The logic is: we set up a default assumption (null), and we only
+abandon it when the data give us strong enough reason to. If the data are
+incompatible with the null (low p-value), the null gets rejected, and by
+exclusion, the alternative is what remains. This is not the same as proving the
+alternative — it just means the null is no longer a reasonable description of
+reality.
+
+```{r null-viz, fig.height=3.5}
+# Visualise the idea: null distribution and where our observation falls
+x      <- seq(-4, 6, length.out = 500)
+df_viz <- tibble(
+  x    = x,
+  null = dnorm(x, mean = 0, sd = 1)
+)
+
+obs <- 2.8   # our test statistic
+
+ggplot(df_viz, aes(x, null)) +
+  geom_area(data = filter(df_viz, x >= obs),
+            fill = "#E41A1C", alpha = 0.4) +
+  geom_line(linewidth = 1.1, colour = "steelblue") +
+  geom_vline(xintercept = obs, linetype = "dashed") +
+  annotate("text", x = obs + 0.15, y = 0.35,
+           label = "observed\nstatistic", hjust = 0, size = 3.5) +
+  annotate("text", x = 3.5, y = 0.05,
+           label = "p-value\n(red area)", colour = "#E41A1C", size = 3.5) +
+  labs(title = "Null distribution with p-value highlighted",
+       x = "test statistic", y = "density") +
+  theme_minimal()
+```
+
+---
+
+# 2 The p-value
+
+## What it is
+
+The p-value is the probability of observing a test statistic at least as extreme
+as the one we actually got — *assuming the null hypothesis is true*. Visually, it
+is the red area in the plot above: the tail of the null distribution beyond our
+observation.
+
+A small p-value means our data would be very unusual in a world where the null
+is true. We use this as evidence against the null.
+
+## What it is NOT
+
+The p-value is frequently misunderstood. It is **not**:
+
+- the probability that the null hypothesis is true
+- the probability that our result occurred by chance
+- a measure of effect size or biological relevance
+
+A very large dataset can produce a tiny p-value for a biologically meaningless
+difference. And a large p-value does not prove the null is true — it just means
+we don't have enough evidence to reject it.
+
+```{r pvalue-demo}
+# Coin tossing example from the book
+set.seed(42)
+numFlips <- 100
+numHeads <- 59
+
+# Null distribution: binomial with p=0.5
+k             <- 0:numFlips
+binomDensity  <- tibble(k = k, p = dbinom(k, size = numFlips, prob = 0.5))
+alpha         <- 0.05
+binomDensity  <- arrange(binomDensity, p) |>
+                   mutate(reject = cumsum(p) <= alpha)
+
+ggplot(binomDensity) +
+  geom_bar(aes(x = k, y = p, fill = reject), stat = "identity") +
+  scale_fill_manual(values = c("TRUE" = "#E41A1C", "FALSE" = "grey70"),
+                    labels = c("TRUE" = "rejection region", "FALSE" = "no rejection")) +
+  geom_vline(xintercept = numHeads, colour = "steelblue", linewidth = 1) +
+  annotate("text", x = numHeads + 1, y = 0.07,
+           label = paste("observed:", numHeads), hjust = 0, colour = "steelblue") +
+  labs(title = "Binomial null distribution for 100 coin flips (p = 0.5)",
+       subtitle = "Red = rejection region at α = 0.05 | Blue line = observed value",
+       x = "number of heads", y = "probability", fill = "") +
+  theme_minimal()
+
+# Exact p-value
+pval <- binom.test(numHeads, numFlips, p = 0.5)$p.value
+cat(sprintf("p-value: %.4f  →  %s reject at α = 0.05\n",
+            pval, ifelse(pval < 0.05, "DO", "do NOT")))
+```
+
+> The observed value of 59 heads sits in the grey region — we do not reject the
+> null. Despite knowing (from the simulation) that the coin is biased (p=0.6),
+> 100 flips are not enough to prove it with 95% confidence.
+
+---
+
+# 3 Types of Error
+
+When we make a decision based on a test, we can be right or wrong in two
+different ways:
+
+| | **Null is actually true** | **Null is actually false** |
+|---|---|---|
+| **We reject null** | Type I error (false positive) | True positive ✓ |
+| **We don't reject** | True negative ✓ | Type II error (false negative) |
+
+## Type I error (false positive)
+
+We conclude there is an effect when there isn't one. The rate at which this
+happens is $\alpha$, which we set ourselves (usually 0.05). This is also called
+the **significance level**.
+
+## Type II error (false negative)
+
+We miss a real effect. The rate is $\beta$. The **power** of a test is
+$1 - \beta$ — how often it correctly detects a true effect.
+
+## The trade-off
+
+You can never eliminate both errors at once. Making the test stricter (lower
+$\alpha$, shifting the threshold) reduces false positives but inevitably
+increases false negatives — and vice versa. The right balance depends on the
+context: missing a real drug effect (false negative) and falsely approving an
+ineffective drug (false positive) have very different consequences.
+
+```{r error-types, fig.height=4}
+x    <- seq(-4, 8, length.out = 1000)
+thresh <- 1.96
+
+df_errors <- tibble(
+  x   = x,
+  H0  = dnorm(x, mean = 0, sd = 1),
+  H1  = dnorm(x, mean = 3, sd = 1)
+)
+
+ggplot(df_errors, aes(x)) +
+  geom_area(data = filter(df_errors, x >= thresh),
+            aes(y = H0), fill = "#E41A1C", alpha = 0.5) +
+  geom_area(data = filter(df_errors, x <= thresh),
+            aes(y = H1), fill = "#377EB8", alpha = 0.5) +
+  geom_line(aes(y = H0), colour = "#E41A1C", linewidth = 1) +
+  geom_line(aes(y = H1), colour = "#377EB8", linewidth = 1) +
+  geom_vline(xintercept = thresh, linetype = "dashed") +
+  annotate("text", x = 3.2,  y = 0.32, label = "H₁ (alternative)",
+           colour = "#377EB8", size = 3.5) +
+  annotate("text", x = -1.5, y = 0.32, label = "H₀ (null)",
+           colour = "#E41A1C", size = 3.5) +
+  annotate("text", x = 2.7,  y = 0.05, label = "Type I\n(α)",
+           colour = "#E41A1C", size = 3) +
+  annotate("text", x = 0.8,  y = 0.05, label = "Type II\n(β)",
+           colour = "#377EB8", size = 3) +
+  labs(title = "Type I and Type II errors",
+       subtitle = "Dashed = decision threshold",
+       x = "test statistic", y = "density") +
+  theme_minimal()
+```
+
+---
+
+# 4 Multiple Testing
+
+## The problem
+
+In biology we rarely test just one hypothesis. A typical RNA-Seq experiment tests
+thousands of genes simultaneously. If we use $\alpha = 0.05$ for each test, we
+expect $5\%$ of all tests to produce a false positive — even when nothing is
+truly differentially expressed. For 20,000 genes, that's 1,000 false positives
+by chance alone.
+
+The xkcd comic the book references illustrates this perfectly: if you test 20
+jelly bean colours for causing acne, one of them will likely come up "significant"
+purely by chance — and that's the one that gets reported in the newspaper.
+
+## Family-wise error rate (FWER) and Bonferroni
+
+One approach is to control the **family-wise error rate**: the probability of
+making *at least one* false positive across all tests. The Bonferroni correction
+divides $\alpha$ by the number of tests $m$:
+
+$$\alpha_{\text{per test}} = \frac{\alpha_{\text{FWER}}}{m}$$
+
+This is very conservative — with 20,000 genes, each individual test needs to
+reach $p < 0.0000025$ to be called significant. Real effects can easily be
+missed.
+
+```{r bonferroni-demo}
+m     <- 20000
+alpha <- 0.05
+cat("Bonferroni threshold per test:", alpha / m, "\n")
+
+# How FWER blows up without correction
+tibble(m_tests = c(1, 10, 100, 1000, 10000),
+       FWER    = 1 - (1 - alpha)^m_tests) |>
+  knitr::kable(digits = 4,
+               col.names = c("Number of tests", "FWER (no correction)"))
+```
+
+## Multiple testing as an opportunity
+
+The book makes an important point: multiple testing is not just a burden. When
+you have thousands of p-values, you can *learn from their distribution*. The
+histogram of p-values is itself informative — it tells you how many true effects
+there are and how strong they are. This is something you can never get from a
+single test.
+
+---
+
+# 5 False Discovery Rate
+
+## A better question
+
+Instead of asking "will I make any false positive at all?" (FWER), the FDR asks
+a more practical question: **among all the things I call significant, what
+fraction are actually false positives?**
+
+$$\text{FDR} = \mathbb{E}\!\left[\frac{\text{false positives}}{\text{all rejections}}\right]$$
+
+If I reject 100 hypotheses and control FDR at 10%, I accept that about 10 of
+those 100 are probably wrong. For a genome-wide screen where we're going to
+follow up anyway, this is a completely reasonable trade-off.
+
+## The p-value histogram
+
+Before applying any FDR method, always plot the histogram of all p-values. It
+should show:
+
+- a **peak near 0** — these are the true positives (genes with real effects)
+- a **flat uniform part** — these are the true nulls (p-values from null hypotheses
+  are uniformly distributed between 0 and 1 by definition)
+
+```{r pvalue-histogram}
+set.seed(99)
+m        <- 5000
+m0       <- 4000   # true nulls
+m1       <- m - m0 # true alternatives
+
+p_null <- runif(m0)                        # nulls: uniform
+p_alt  <- rbeta(m1, shape1 = 0.3, shape2 = 1)  # alternatives: enriched near 0
+
+p_all  <- c(p_null, p_alt)
+
+ggplot(tibble(p = p_all), aes(x = p)) +
+  geom_histogram(binwidth = 0.05, boundary = 0,
+                 fill = "steelblue", colour = "white") +
+  geom_hline(yintercept = m0 * 0.05,   # expected null count per bin
+             colour = "#E41A1C", linetype = "dashed", linewidth = 1) +
+  annotate("text", x = 0.6, y = m0 * 0.05 + 15,
+           label = "expected null level", colour = "#E41A1C", size = 3.5) +
+  labs(title = "Simulated p-value histogram",
+       subtitle = paste0(m1, " true alternatives + ", m0, " true nulls"),
+       x = "p-value", y = "count") +
+  theme_minimal()
+```
+
+## Benjamini-Hochberg procedure
+
+The most widely used method for FDR control. The steps:
+
+1. Sort all $m$ p-values: $p_{(1)} \leq p_{(2)} \leq \cdots \leq p_{(m)}$
+2. Choose target FDR level $\varphi$ (e.g. 0.05 or 0.10)
+3. Find the largest $k$ such that $p_{(k)} \leq \varphi \cdot k / m$
+4. Reject all hypotheses $1, \ldots, k$
+
+```{r bh-procedure, fig.height=4}
+phi   <- 0.10
+p_sorted <- sort(p_all)
+m_tot    <- length(p_sorted)
+rank_vec <- seq_along(p_sorted)
+
+# Find BH cutoff
+bh_line  <- phi * rank_vec / m_tot
+k_max    <- max(which(p_sorted <= bh_line))
+p_cutoff <- p_sorted[k_max]
+
+cat(sprintf("BH threshold at FDR = %.2f: p ≤ %.4f → %d rejections\n",
+            phi, p_cutoff, k_max))
+
+# Visualise only the smallest 1000 p-values for clarity
+n_show <- 1000
+ggplot(tibble(rank = rank_vec[1:n_show], p = p_sorted[1:n_show]),
+       aes(rank, p)) +
+  geom_line(linewidth = 0.8) +
+  geom_abline(slope = phi / m_tot, intercept = 0,
+              colour = "#E41A1C", linewidth = 1) +
+  geom_vline(xintercept = k_max, linetype = "dashed", colour = "#4DAF4A") +
+  annotate("text", x = k_max + 30, y = 0.006,
+           label = paste("reject\nup to here\n(k =", k_max, ")"),
+           hjust = 0, colour = "#4DAF4A", size = 3) +
+  labs(title = "Benjamini-Hochberg procedure",
+       subtitle = paste0("Red line = slope φ/m = ", round(phi/m_tot, 6),
+                         "  |  Reject where p-value line is BELOW red line"),
+       x = "rank", y = "p-value") +
+  theme_minimal()
+```
+
+## Correction method choice: Bonferroni vs. BH
+
+| | **Bonferroni** | **Benjamini-Hochberg** |
+|---|---|---|
+| Controls | FWER (≥1 false positive) | FDR (fraction false positives) |
+| How strict | Very conservative | More lenient |
+| Best for | Confirmatory, few tests, high stakes | Exploratory, many tests |
+| Risk | Many missed real effects | Some false positives in the hit list |
+
+**My choice:** For a genome-wide screen (like the yeast heatshock data), BH is
+the right approach. We're looking for candidates to follow up, not making final
+claims — a small fraction of false positives in the hit list is acceptable, and
+Bonferroni would throw away too many real hits.
+
+```{r correction-comparison}
+# Direct comparison on the same data
+p_bonferroni <- p.adjust(p_all, method = "bonferroni")
+p_bh         <- p.adjust(p_all, method = "BH")
+
+cat("Rejections at α = 0.05:\n")
+cat("  Bonferroni:", sum(p_bonferroni < 0.05), "\n")
+cat("  BH        :", sum(p_bh         < 0.05), "\n")
+cat("  Truth     :", m1, "true alternatives\n")
+```
+
+---
+
+# 6 Summary
+
+| Concept | In one sentence |
+|---|---|
+| **Null hypothesis** | The default assumption of "nothing happening"; we test against it |
+| **Alternative hypothesis** | Everything that is not the null; accepted when null is rejected |
+| **p-value** | Probability of data at least this extreme *if* the null were true |
+| **Type I error** | False positive — rejecting a true null (rate = α) |
+| **Type II error** | False negative — missing a real effect (rate = β) |
+| **Multiple testing** | Running many tests inflates false positives; needs correction |
+| **Bonferroni** | Divide α by number of tests; very strict FWER control |
+| **FDR** | Expected fraction of false positives among all rejections |
+| **BH procedure** | Practical FDR control; sorts p-values and finds a cutoff |
+| **p-value histogram** | Essential sanity check; flat = mostly nulls, peak at 0 = real signal |
+
+
+# Task 2
+
+```{r}
+library(tidyverse)
+library(DESeq2)
+
+raw_data <- read_csv("basic_yeast_heatshock.csv")
+
+counts_10min <- raw_data %>% select(gene_id, `25_0_r1`, `25_0_r2`, `25_0_r3`, `42_10_r1`, `42_10_r2`, `42_10_r3`)  %>% column_to_rownames(var = "gene_id") %>% as.matrix()
+
+col_data_10min <- data.frame(condition = factor(c("control_0min", "control_0min", "control_0min", "heat_10min",   "heat_10min",   "heat_10min")))
+rownames(col_data_10min) <- colnames(counts_10min)
+
+col_data_10min$condition <- relevel(col_data_10min$condition, ref = "control_0min") # control group as baseline
+
+all(colnames(counts_10min) == rownames(col_data_10min))
+
+dds_10min <- DESeqDataSetFromMatrix(countData = counts_10min,
+                              colData = col_data_10min,
+                              design = ~ condition)
+
+dds_10min <- DESeq(dds_10min)
+
+result_10min <- results(dds_10min, contrast = c("condition", "heat_10min", "control_0min"))
+
+res_10min_df <- result_10min %>% as.data.frame() %>% rownames_to_column(var = "gene_id")
+
+head(res_10min_df)
+
+counts_30min <- raw_data %>% select(gene_id, `25_0_r1`, `25_0_r2`, `25_0_r3`, `42_30_r1`, `42_30_r2`, `42_30_r3`) %>% column_to_rownames(var = "gene_id") %>% as.matrix()
+
+col_data_30min <- data.frame(condition = factor(c("control_0min", "control_0min", "control_0min",
+    "heat_30min",   "heat_30min",   "heat_30min")))
+rownames(col_data_30min) <- colnames(counts_30min)
+col_data_30min$condition <- relevel(col_data_30min$condition, ref = "control_0min")
+all(colnames(counts_30min) == rownames(col_data_30min))
+
+dds_30min <- DESeqDataSetFromMatrix(countData = counts_30min,
+                                    colData = col_data_30min,
+                                    design = ~ condition)
+
+dds_30min <- DESeq(dds_30min)
+
+result_30min <- results(dds_30min, contrast = c("condition", "heat_30min", "control_0min"))
+res_30min_df <- result_30min %>% as.data.frame() %>% rownames_to_column(var = "gene_id")
+
+head(res_30min_df)
+
+up_10min <- res_10min_df %>% filter(padj < 0.05 & log2FoldChange > 1)
+down_10min <- res_10min_df %>% filter(padj < 0.05 & log2FoldChange < -1)
+
+up_30min <- res_30min_df %>% filter(padj < 0.05 & log2FoldChange > 1)
+down_30min <- res_30min_df %>% filter(padj < 0.05 & log2FoldChange < -1)
+
+```
+
+```{r - volcano plot}
+plot_data_10min <- res_10min_df %>% 
+  mutate(Category = case_when(padj < 0.05 & log2FoldChange > 1 ~ "Upregulated", 
+                               padj < 0.05 & log2FoldChange < -1 ~ "Downregulated", 
+                               TRUE ~ "Not significant"))
+
+ggplot(plot_data_10min, aes(x = log2FoldChange, y = -log10(padj), color = Category)) + geom_point(alpha = 0.5, size = 1.5) + scale_color_manual(values = c("Upregulated" = "red",
+                                                    "Downregulated" = "blue",
+                                                    "Not significant" = "grey")) + 
+  theme_minimal() + 
+  labs(title = "Volcano Plot: Heatshock 10 min vs. control", x = "Log2 Fold Change", y = "-Log10 adjusted p-value")
+```
+
+```{r - bar plot}
+data_barplot <- data.frame(Time = c("10 min", "10 min", "30 min", "30 min"),
+                           Direction = c("Upregulated", "Downregulated", "Upregulated", "Downregulated"),
+                           Number = c(nrow(up_10min), nrow(down_10min), nrow(up_30min), nrow(down_30min)))
+                           
+ggplot(data_barplot, aes( x = Time, y = Number, fill = Direction)) + geom_bar(stat = "identity", position = "dodge") + scale_fill_manual(values = c("Upregulated" = "red", "Downregulated" = "blue")) + theme_bw() + 
+  labs(title = "Comparison of the Number expressed genes",
+       x = "Time of Heatshock",
+       y = "Amount of genes (p_adj < 0.05, |log2FoldChange| > 1)",
+       fill = "Regulation") + 
+  geom_text(aes(label = Number), position = position_dodge(width = 0.9), vjust = -0.25)
+```
+
+
+```{r - intercept}
+u10 <- up_10min %>% select(gene_id) %>% mutate(up_10min = TRUE)
+d10 <- down_10min %>% select(gene_id) %>% mutate(down_10min = TRUE)
+u30 <- up_30min %>% select(gene_id) %>% mutate(up_30min = TRUE)
+d30 <- down_30min %>% select(gene_id) %>% mutate(down_30min = TRUE)
+
+overlap_matrix <- u10 %>% 
+  full_join(d10, by = "gene_id") %>%
+  full_join(u30, by = "gene_id") %>%
+  full_join(d30, by = "gene_id")
+
+overlap_clean <- overlap_matrix %>%
+  replace_na(list(up_10min = FALSE, down_10min = FALSE, up_30min = FALSE, down_30min = FALSE)) # NA -> FALSE
+
+overlap_counts <- overlap_clean %>% dplyr::count(up_10min, down_10min, up_30min, down_30min, name = "Number_Genes") 
+
+overlap_long <- overlap_counts %>% mutate(Combination_ID = paste0("Intercept_", row_number())) %>% pivot_longer(cols = c(up_10min, down_10min, up_30min, down_30min), names_to = "Gen_Set", values_to = "is_valid")
+
+ggplot(overlap_long, aes(x = reorder(Combination_ID, -Number_Genes), y = Gen_Set)) + 
+  geom_tile(aes(fill = is_valid), color = "white", size = 1) + 
+  scale_fill_manual(values = c("TRUE" = "orchid", "FALSE" = "skyblue")) + geom_text(aes(label = ifelse(is_valid, as.character(Number_Genes), "")), color = "white", fontface = "bold") + 
+  theme_minimal() + 
+  labs(title = "Intercept of the 4 Gene Sets",
+       x = "Combination of Intercept (sorted by number)",
+       y = "Gene Set",
+       fill = "Contained in intercept") + 
+  theme(axis.text.x = element_blank(),
+        panel.grid = element_blank())
+  
